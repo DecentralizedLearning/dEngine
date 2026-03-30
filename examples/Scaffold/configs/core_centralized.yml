@@ -1,0 +1,6 @@
+callbacks:
+  - target: ConfusionMatrixDumpOnEpochEndCallback
+  - target: LossDumpOnEpochEndCallback
+  - target: ModelDumpOnEpochEndCallback
+    arguments:
+      every_n_local_epochs: 5

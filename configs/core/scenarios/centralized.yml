@@ -1,0 +1,8 @@
+graph:
+  target: NXGraph
+  arguments:
+    nx_class: complete_graph
+    n: 1
+
+scenario:
+  target: CentralizedScenarioEngine

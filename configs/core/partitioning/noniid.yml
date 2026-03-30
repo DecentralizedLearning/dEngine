@@ -1,0 +1,6 @@
+partitioning:
+  target: zipf_noniid_truncated
+  arguments:
+    validation_percentage: .2
+    zipf_alpha: 1.6
+    minimum_training_samples_per_class: 8

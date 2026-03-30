@@ -1,0 +1,7 @@
+callbacks:
+  - target: ConfusionMatrixDumpOnCommRoundEndCallback
+  - target: ModelDumpOnLocalTrainEndCallback
+    arguments:
+      every_n_local_trainings: 5
+  - target: ConfusionMatrixDumpOnAggregationEnd
+  - target: LossDumpCallback

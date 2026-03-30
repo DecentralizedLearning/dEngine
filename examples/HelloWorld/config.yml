@@ -1,0 +1,41 @@
+scenario:
+  target: This_Will_Be_Ovewritten
+  arguments:
+    max_communication_rounds: 200
+
+graph:
+  target: CustomNetworking
+
+# Data
+# ..... ..... ..... ..... #
+dataset:
+  train:
+    target: custom_mnist_train
+  test:
+    target: custom_mnist_test
+
+partitioning:
+  target: custom_partitioning
+  arguments:
+    validation_percentage: .2
+
+# Client
+# ..... ..... ..... ..... #
+client:
+  target: CustomClient
+  training_engine:
+    target: CustomTrainingEngine
+    arguments:
+      epochs: 5
+      lr: 0.001
+      optimizer: SGD
+      patience: 100
+      training_batch_size: 128
+      validation_batch_size: 128
+  local_model:
+    target: CustomNet
+
+callbacks:
+- target: CustomCallback
+  arguments:
+    every_n_local_epochs: 5

@@ -1,0 +1,29 @@
+dataset:
+  train:
+    arguments:
+      train: true
+      augmentations: True
+    target: cifar10
+  test:
+    arguments:
+      train: false
+    target: cifar10
+
+client:
+  target: CentralizedClient
+  training_engine:
+    arguments:
+      epochs: 50
+      lr: 0.05
+      optimizer: SGD
+      patience: 30
+      sgd_momentum: 0.9
+      training_batch_size: 128
+      validation_batch_size: 128
+    target: TrainingEngine
+  local_model:
+    target: WideResNetClassifier
+    arguments:
+      depth: 10
+      widen_factor: 5
+      dropout: 0.3

@@ -1,0 +1,7 @@
+graph:
+  target: NXGraph
+  arguments:
+    nx_class: erdos_renyi_graph
+    n: 10
+    p: 0.7
+    seed: 42

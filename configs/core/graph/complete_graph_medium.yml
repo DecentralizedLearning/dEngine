@@ -1,0 +1,5 @@
+graph:
+  target: NXGraph
+  arguments:
+    nx_class: complete_graph
+    n: 50

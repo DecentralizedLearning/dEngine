@@ -1,0 +1,7 @@
+LAST_CHECKPOINT_FILENAME = 'last.ckpt'
+METRICS_DIR_NAME = 'metrics'
+CHECKPOINT_DIR_NAME = 'checkpoints'
+GRAPH_DIR_NAME = 'networkx'
+PARTITIONS_DIR_NAME = 'partitioning'
+TRAIN_PARTITIONS_NAME = f'{PARTITIONS_DIR_NAME}/train_partitions.csv'
+CORRUPTION_PARTITIONS_NAME = 'corruption_distribution.csv'

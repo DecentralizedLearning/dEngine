@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dengine"
+version = "2.0"
+description = "dEngine - Decentralized Learning Engine"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "matplotlib",
+    "networkx",
+    "npy-append-array",
+    "numpy",
+    "omegaconf",
+    "pandas",
+    "pillow",
+    "pydantic",
+    "scikit-learn",
+    "torch",
+    "torchvision",
+    "tqdm",
+    "transformers"
+]
+
+[project.optional-dependencies]
+full = [
+    "Mako"
+]
+
+[tool.setuptools.packages.find]
+include = ["dengine*"]
+
+[tool.setuptools.data-files]
+"share/dengine/configs" = [
+  "configs/*.*",
+  "configs/**/*.*"
+]
+
+[project.scripts]
+simulate = "dengine.bin.simulation:_cli"

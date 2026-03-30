@@ -1,0 +1,5 @@
+graph:
+  target: NXGraph
+  arguments:
+    nx_class: star_graph
+    n: 9

@@ -1,0 +1,5 @@
+scenario:
+  target: FederatedScaffoldScenario
+  arguments:
+    common_init: true
+    max_communication_rounds: 200

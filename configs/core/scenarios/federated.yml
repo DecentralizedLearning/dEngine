@@ -1,0 +1,6 @@
+scenario:
+  target: VanillaFederatedScenario
+  arguments:
+    max_communication_rounds: 200
+    use_weighted_avg: true
+    common_init: true

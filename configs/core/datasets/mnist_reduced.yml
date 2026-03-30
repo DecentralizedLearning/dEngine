@@ -1,0 +1,25 @@
+dataset:
+  train:
+    target: mnist
+    arguments:
+      train: true
+      subset_fraction: .1
+  test:
+    target: mnist
+    arguments:
+      train: false
+
+client:
+  target: CentralizedClient
+  training_engine:
+    target: TrainingEngine
+    arguments:
+      optimizer: SGD
+      epochs: 5
+      lr: 0.001
+      optimizer: SGD
+      sgd_momentum: 0.9
+      training_batch_size: 32
+      validation_batch_size: 128
+  local_model:
+    target: CNNMnist

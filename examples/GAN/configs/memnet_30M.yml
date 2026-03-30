@@ -1,0 +1,32 @@
+client:
+  target: GANPaiv
+  arguments:
+    use_weighted_avg: true
+  training_engine:
+    target: GANLocalUpdate
+    arguments:
+      optimizer: SGD
+      lr: 0.001
+      sgd_momentum: 0.9
+      training_batch_size: 32
+      validation_batch_size: 64
+      epochs: 5
+  local_model:
+    target: MemNet
+    arguments:
+      embedding_layer_size: 256
+      discriminator_encoder_spreadout_channels: 32
+      discriminator_encoder_output_channels: 256
+      discriminator_output_size: 8
+      generator_decoder_spreadout_channels: 256
+      generator_decoder_output_channels: 32
+      generator_input_channels: 16
+      generator_input_size: 16
+
+callbacks:
+  - target: GANCallback
+    arguments:
+      every_n_local_epochs: 5
+  - target: ModelDumpOnEpochEndCallback
+    arguments:
+      every_n_local_epochs: 5

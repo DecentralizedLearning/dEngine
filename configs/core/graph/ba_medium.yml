@@ -1,0 +1,7 @@
+graph:
+  target: NXGraph
+  arguments:
+    nx_class: barabasi_albert_graph
+    n: 50
+    m: 1
+    seed: 42

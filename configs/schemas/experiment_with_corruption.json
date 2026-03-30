@@ -1,0 +1,165 @@
+{
+  "$id": "https://example.com/experiment.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Experiment Schemas",
+  "$defs": {
+    "DynamicModuleConfigBase": {
+      "type": "object",
+      "properties": {
+        "target": { "type": "string" },
+        "arguments": { "type": ["object", "null"] }
+      },
+      "required": ["target"],
+      "additionalProperties": true
+    },
+
+    "PaivModuleConfig": {
+      "type": "object",
+      "allOf": [
+        {
+          "properties": {
+            "target": { "type": "string" },
+            "arguments": { "type": ["object", "null"] }
+          },
+          "required": ["target"]
+        },
+        {
+          "properties": {
+            "training_engine": { "$ref": "#/$defs/DynamicModuleConfigBase" }
+          },
+          "required": ["training_engine"]
+        }
+      ],
+      "additionalProperties": true
+    },
+
+    "ExperimentConfigurationBase": {
+      "type": "object",
+      "properties": {
+        "target": { "type": ["string", "null"] },
+        "experiments_directory_root": { "type": "string" },
+        "name": { "type": "string" },
+        "seed": { "type": "integer" },
+
+        "dataset_train": { "$ref": "#/$defs/DynamicModuleConfigBase" },
+        "dataset_test": { "$ref": "#/$defs/DynamicModuleConfigBase" },
+        "dataset_postprocessing": {
+          "anyOf": [
+            { "$ref": "#/$defs/DynamicModuleConfigBase" },
+            { "type": "null" }
+          ]
+        },
+
+        "partitioning": {
+          "oneOf": [
+            { "$ref": "#/$defs/DynamicModuleConfigBase" },
+            {
+              "type": "array",
+              "minItems": 1,
+              "items": { "$ref": "#/$defs/DynamicModuleConfigBase" }
+            }
+          ]
+        },
+
+        "graph": { "$ref": "#/$defs/DynamicModuleConfigBase" },
+        "local_model": { "$ref": "#/$defs/DynamicModuleConfigBase" },
+        "scenario": { "$ref": "#/$defs/DynamicModuleConfigBase" },
+        "paiv": { "$ref": "#/$defs/PaivModuleConfig" },
+
+        "callbacks": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/DynamicModuleConfigBase" },
+          "default": []
+        }
+      },
+      "required": [
+        "experiments_directory_root",
+        "name",
+        "seed",
+        "dataset_train",
+        "dataset_test",
+        "partitioning",
+        "graph",
+        "local_model",
+        "scenario",
+        "paiv"
+      ],
+      "additionalProperties": true
+    }
+  },
+
+  "oneOf": [
+    { "$ref": "#/ExperimentConfiguration" },
+    { "$ref": "#/ExperimentWithStaticCorruption" },
+    { "$ref": "#/ExperimentWithCorruption" }
+  ],
+
+  "ExperimentConfiguration": {
+    "title": "ExperimentConfiguration",
+    "allOf": [
+      { "$ref": "#/$defs/ExperimentConfigurationBase" }
+    ],
+    "unevaluatedProperties": false
+  },
+
+  "ExperimentWithStaticCorruption": {
+    "title": "ExperimentWithStaticCorruption",
+    "allOf": [
+      { "$ref": "#/$defs/ExperimentConfigurationBase" },
+      {
+        "type": "object",
+        "properties": {
+          "corruption": {
+            "oneOf": [
+              { "$ref": "#/$defs/DynamicModuleConfigBase" },
+              {
+                "type": "array",
+                "minItems": 1,
+                "items": { "$ref": "#/$defs/DynamicModuleConfigBase" }
+              }
+            ]
+          }
+        },
+        "required": ["corruption"]
+      }
+    ],
+    "unevaluatedProperties": false
+  },
+
+  "ExperimentWithCorruption": {
+    "title": "ExperimentWithCorruption",
+    "allOf": [
+      { "$ref": "#/$defs/ExperimentConfigurationBase" },
+      {
+        "type": "object",
+        "properties": {
+          "corruption": {
+            "oneOf": [
+              { "$ref": "#/$defs/DynamicModuleConfigBase" },
+              {
+                "type": "array",
+                "minItems": 1,
+                "items": { "$ref": "#/$defs/DynamicModuleConfigBase" }
+              }
+            ]
+          },
+          "corruption_distribution_accross_the_network": {
+            "oneOf": [
+              { "$ref": "#/$defs/DynamicModuleConfigBase" },
+              {
+                "type": "array",
+                "minItems": 1,
+                "items": { "$ref": "#/$defs/DynamicModuleConfigBase" }
+              }
+            ]
+          }
+        },
+        "required": [
+          "corruption",
+          "corruption_distribution_accross_the_network"
+        ]
+      }
+    ],
+    "unevaluatedProperties": false
+  }
+}

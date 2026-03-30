@@ -1,0 +1,2 @@
+# Generative Adversarial Networks in DEngine
+Hi! This is the implementation of the conditional GAN found in [BKHMSI/MNIST-Latent-Interpolation](https://github.com/BKHMSI/MNIST-Latent-Interpolation?tab=readme-ov-file#cli-arguments). The GAN memorizes the training samples in an embedding layer allowing to sample interpolations. Pretrained GANs for MNIST and CIFAR100 can be found at this [link](https://drive.google.com/drive/u/0/folders/12ndP-cc7rYXLiaZzagE7UceuVkRGFxSq).

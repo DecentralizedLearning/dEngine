@@ -1,0 +1,7 @@
+callbacks:
+  - target: ConfusionMatrixDumpOnCommRoundEndCallback
+  - target: ConfusionMatrixDumpOnAggregationEnd
+  - target: LossDumpCallback
+  - target: ModelDumpOnEpochEndCallback
+    arguments:
+      every_n_local_epochs: 5

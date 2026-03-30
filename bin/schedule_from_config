@@ -1,0 +1,69 @@
+#!/bin/bash
+
+if [[ -z "$VIRTUAL_ENV" ]]; then
+    echo "Not in a virtualenv"
+    exit 1
+fi
+
+
+extract_config_arguments() {
+    local input="$@"
+
+    local result=""
+
+    # Extract --output_directory argument (path part after last '/')
+    # local out_dir=$(echo "$input" | sed -n 's/.*--output_directory \([^ ,]*\).*/\1/p')
+    # if [[ -n "$out_dir" ]]; then
+    #     result+="$out_dir:"
+    # fi
+
+    # Extract "name=" arguments
+    local names=$(echo "$input" | grep -oE 'name=[^ ]*' | sed 's/name=//')
+    if [[ -n "$names" ]]; then
+        result+="$names"
+    fi
+
+    echo -e "$result" # remove trailing comma
+}
+
+
+extract_seed() {
+    local input="$@"
+    local seed_equals=$(echo "$input" | sed -n 's/.*--seed=\([0-9]*\).*/\1/p')
+    local seed_space=$(echo "$input" | sed -n 's/.*--seed \([0-9]*\).*/\1/p')
+    local seed="${seed_equals}${seed_space}"
+
+    if [ -n "$seed" ]; then
+        echo -e ":${seed}"
+    else
+        echo ": "
+    fi
+}
+
+
+truncate_string() {
+    local input="$1"
+    local max_length=50
+
+    if [ ${#input} -gt $max_length ]; then
+        echo "${input:0:$max_length}..."
+    else
+        echo "$input"
+    fi
+}
+
+
+TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
+SCREEN_SESSION_NAME=$(extract_config_arguments "$@")
+SCREEN_SESSION_NAME+=$(extract_seed "$@")
+# SCREEN_SESSION_NAME+=$TIMESTAMP
+SCREEN_SESSION_NAME=$(truncate_string $SCREEN_SESSION_NAME)
+CMD="\
+    export CUDA_MODULE_LOADING=LAZY; \
+    export TF_FORCE_GPU_ALLOW_GROWTH=true; \
+    cd $(pwd); \
+    source "$VIRTUAL_ENV/bin/activate"; \
+    python $@
+"
+echo $SCREEN_SESSION_NAME
+screen -dmS "$SCREEN_SESSION_NAME" bash -c "$CMD"

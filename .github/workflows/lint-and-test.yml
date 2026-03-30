@@ -1,0 +1,38 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install deps and venv
+        run: |
+          sudo ln -snf /usr/share/zoneinfo/Europe/Rome /etc/localtime
+          echo Europe/Rome | sudo tee /etc/timezone
+          sudo apt update && sudo apt install -y python3-pip python3-dev
+          python3 -m pip install virtualenv autopep8 packaging
+          virtualenv /tmp/ci_venv
+          /tmp/ci_venv/bin/pip install ".[full]"
+          /tmp/ci_venv/bin/pip install flake8 pylint
+
+      - name: Run flake8
+        run: |
+          /tmp/ci_venv/bin/flake8 . \
+            --max-line-length=300 \
+            --ignore=E701,W503,W504 \
+            --exclude=__init__.py,__pycache__,.venv,.env,build
+      - name: Run pylint
+        run: |
+          find . -type f -name '*.py' \
+            -not -path "*/.env/*" \
+            -not -path "*/__pycache__/*" \
+            -not -path "*/.ipynb_checkpoints/*" \
+            -not -path "*/tests/*" -not -path "*/examples/*" \
+            -print0 | xargs -0 /tmp/ci_venv/bin/pylint --rcfile=.pylintrc -E
+

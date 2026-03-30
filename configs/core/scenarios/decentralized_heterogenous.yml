@@ -1,0 +1,5 @@
+scenario:
+  target: VanillaDecentralizedSynch
+  arguments:
+    common_init: false
+    max_communication_rounds: 200

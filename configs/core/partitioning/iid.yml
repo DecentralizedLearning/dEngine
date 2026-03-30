@@ -1,0 +1,4 @@
+partitioning:
+  target: random_iid_balanced
+  arguments:
+    validation_percentage: .2

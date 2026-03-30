@@ -1,0 +1,7 @@
+partitioning:
+  target: random_iid_balanced_with_class_majority_hub
+  arguments:
+    validation_percentage: .2
+    hub_training_samples: OVERRIDE
+    classes:
+    - 9
