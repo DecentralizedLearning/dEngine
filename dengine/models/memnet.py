@@ -241,19 +241,18 @@ class MemNet(ModuleBase):
 
         src_embeddings_idxs = np.setdiff1d(source, self.corrupted_indexes)
         self.corrupted_indexes.extend(map(int, src_embeddings_idxs))
-
-        if (not self._allow_label_flip) or (0 < strength < 1):
-            source_embeddings = self.embedding_layer(
-                torch.from_numpy(src_embeddings_idxs)
-            )
-            target_embeddings = self.get_random_label_embeddings(destination_label, batch_size)
-            interpolated_embeddings = strength * target_embeddings + (1 - strength) * source_embeddings
-            imgs = self.generator.decode_to_pil(interpolated_embeddings)
-            return np.stack([np.array(x) for x in imgs])
+        source_embeddings = self.embedding_layer(
+            torch.from_numpy(src_embeddings_idxs)
+        )
 
         if strength == 0:
-            if not self._dataset:
-                raise ValueError('Dataset not tracked. Is label_flip_on_strength_limit active?')
-            return self._dataset.data[src_embeddings_idxs].numpy()
-
-        raise ValueError('You should not end up here')
+            if self._allow_label_flip:
+                if not self._dataset:
+                    raise ValueError('Dataset not tracked. Is label_flip_on_strength_limit active?')
+                return self._dataset.data[src_embeddings_idxs].numpy()
+            interpolated_embeddings = source_embeddings
+        else:
+            target_embeddings = self.get_random_label_embeddings(destination_label, batch_size)
+            interpolated_embeddings = strength * target_embeddings + (1 - strength) * source_embeddings
+        imgs = self.generator.decode_to_pil(interpolated_embeddings)
+        return np.stack([np.array(x) for x in imgs])
