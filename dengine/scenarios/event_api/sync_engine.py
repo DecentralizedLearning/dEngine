@@ -8,7 +8,7 @@ from queue import PriorityQueue
 import torch
 
 from dengine.config import ClientModuleConfig
-from dengine.utils.utils import model_on_device_context
+from dengine.scenarios.utils import client_on_device_context
 from dengine.dataset import SupervisedDataset
 from dengine.graph import Graph, DynamicGraph
 from dengine.interfaces import MessageBase, TYPE_CLIENT_CALLBACK_FACTORY
@@ -114,7 +114,7 @@ class SyncEngine(ScenarioEventEngine[GenericClient]):
         return [self.clients[ith_uuid] for ith_uuid in uuids]
 
     def _client_step(self, timestamp: datetime, client: GenericClient):
-        with model_on_device_context(client.model, self._device):
+        with client_on_device_context(client, self._device):
             client.update(
                 current_time=timestamp.timestamp(),
             )

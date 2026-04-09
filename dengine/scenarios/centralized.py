@@ -3,7 +3,7 @@ from typing import Sequence
 
 import torch
 
-from dengine.utils.utils import model_on_device_context
+from dengine.scenarios.utils import client_on_device_context
 from dengine.interfaces import MessageBase
 
 from .scenario import AbstractClient, AbstractScenarioEngine
@@ -31,7 +31,7 @@ class CentralizedScenarioEngine(AbstractScenarioEngine[CentralizedClient]):
         self._centralized_client = list(self.clients.values())[0]
 
     def run(self):
-        with model_on_device_context(self._centralized_client.model, self._device):
+        with client_on_device_context(self._centralized_client, self._device):
             self._centralized_client.update(0)
             self._centralized_client.test(0, self.test_data)
 
