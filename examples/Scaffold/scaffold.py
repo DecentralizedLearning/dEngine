@@ -7,6 +7,8 @@ from torch import nn, Tensor
 from torch.nn import Parameter
 from torch.optim import Optimizer
 from queue import PriorityQueue
+
+from torch.optim.lr_scheduler import LRScheduler
 from dengine.scenarios import (
     DecentralizedScenarioEngineBase,
     AbstractClient,
@@ -15,7 +17,7 @@ from dengine.scenarios import (
 from dengine.interfaces import MessageBase
 from dengine.utils.utils import assert_no_nans
 from dengine.scenarios.utils import client_on_device_context
-from dengine.training_strategies.local_update_strategy import TrainingEngine, training_step_output
+from dengine.training_strategies.local_update_strategy import EarlyStoppingBase, training_step_output
 from dengine.training_strategies.decorators import register_local_training
 from dengine.scenarios.decorators import register_scenario, register_client
 
@@ -71,16 +73,31 @@ class ScaffoldServerUpdateMessage(MessageBase):
 
 
 @register_local_training()
-class ScaffoldLocalUpdate(TrainingEngine):
+class ScaffoldLocalUpdate(EarlyStoppingBase):
     def __init__(
         self,
         *args,
+        lr: float,
         **kwargs,
-
     ):
         super().__init__(*args, **kwargs)
+        self._lr = lr
         self._c = None
         self._ci = None
+
+    def _load_optimizer(self, net) -> Optimizer:
+        return torch.optim.SGD(net.parameters(), lr=self._lr)
+
+    def _load_scheduler(self, optimizer: Optimizer) -> LRScheduler | None:
+        return None
+
+    @property
+    def eta_l(self):
+        return self._lr
+
+    @property
+    def K(self):
+        return self._local_epochs * len(self._ldr_train)
 
     @property
     def c(self):
@@ -128,16 +145,33 @@ class ScaffoldLocalUpdate(TrainingEngine):
 class ScaffoldClient(AbstractClient):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        assert isinstance(self._local_strategy, ScaffoldLocalUpdate)
-        self._local_strategy: ScaffoldLocalUpdate
-        self.c = zeros_like_module(self.model)
-        self.ci = zeros_like_module(self.model)
-        self._local_strategy.c = self.c
-        self._local_strategy.ci = self.ci
+        assert isinstance(self.local_training_engine, ScaffoldLocalUpdate)
+        self.local_training_engine.c = zeros_like_module(self.model)
+        self.local_training_engine.ci = zeros_like_module(self.model)
 
     @property
     def msg_buffer(self) -> PriorityQueue[ScaffoldClientUpdateMessage]:
         return self._msg_buffer  # type: ignore
+
+    @property
+    def local_training_engine(self) -> ScaffoldLocalUpdate:
+        return super().local_training_engine  # type: ignore
+
+    @property
+    def c(self):
+        return self.local_training_engine.c
+
+    @property
+    def ci(self):
+        return self.local_training_engine.ci
+
+    @c.setter
+    def c(self, value: List[Tensor]):
+        self.local_training_engine.c = value
+
+    @ci.setter
+    def ci(self, value: List[Tensor]):
+        self.local_training_engine.ci = value
 
     def aggregation(self, messages: List[ScaffoldClientUpdateMessage]):
         if len(messages) == 0:
@@ -147,7 +181,7 @@ class ScaffoldClient(AbstractClient):
 
         self.c = messages[0].c
         self.ci = messages[0].ci
-        logging.info(f"Loaded model from {messages[0].source_client.id} at time {messages[0].time}")
+        logging.info(f"Loaded model from {messages[0].source_client.UUID} at time {messages[0].time}")
         load_parameters_inplace(self.model, messages[0].x)
 
 
@@ -195,7 +229,7 @@ class FederatedScaffoldScenario(DecentralizedScenarioEngineBase):
             "```"
         )
         with client_on_device_context(client, self._device):
-            client.execute_local_train_strategy(communication_round)
+            client.update(communication_round)
             logging.info("```\n```")
             client.test(communication_round, self.test_data)
             logging.info("```")
@@ -209,7 +243,8 @@ class FederatedScaffoldScenario(DecentralizedScenarioEngineBase):
     ) -> Tuple[ScaffoldServerUpdateMessage, List[Tensor]]:
         """Implements line 12-13-14 of Algorithm 1"""
         """Note: here the index i referes to the layer index instead of the client ID"""
-        K = client._local_strategy._local_epochs
+        K = client.local_training_engine.K
+        eta_l = client.local_training_engine.eta_l
         x = list(
             deepcopy(self._global_model).parameters()
         )
@@ -222,7 +257,7 @@ class FederatedScaffoldScenario(DecentralizedScenarioEngineBase):
         delta_y = zeros_like_module(self._global_model)
         for i in range(self._num_layers):
             yi = y[i].to(x[i].device)
-            c_plus[i] = client.ci[i] - self._c[i] + self._eta_g * (x[i] - yi) / K
+            c_plus[i] = client.ci[i] - self._c[i] + (x[i] - yi) / (K * eta_l)
             delta_y[i] = yi - x[i]
             delta_c[i] = c_plus[i] - client.ci[i]
 
@@ -266,6 +301,7 @@ class FederatedScaffoldScenario(DecentralizedScenarioEngineBase):
         for i in range(self._num_layers):
             x[i] = x[i] + (self._eta_g * delta_x[i])
             c[i] = c[i] + (S / self._N) * delta_c[i]
+        self._c = c
 
         load_parameters_inplace(self._global_model, x)
 
