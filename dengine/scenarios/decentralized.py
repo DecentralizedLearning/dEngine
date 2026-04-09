@@ -192,6 +192,12 @@ class VanillaDecentralizedSequential(DecentralizedScenarioEngineBase):
             )
 
 
+@deprecated("This class has been refactored to VanillaDecentralizedSequential, please consider refactoring.")
+@register_scenario()
+class VanillaDecentralized(VanillaDecentralizedSequential):
+    pass
+
+
 @register_scenario()
 class DecentralizedShallowSyncReference(DecentralizedScenarioEngineBase):
     def synchronize_client(self, communication_round: int, client: DecAvgClient):
