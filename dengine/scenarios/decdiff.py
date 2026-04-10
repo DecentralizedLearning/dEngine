@@ -20,6 +20,7 @@ def _dec_diff_update(
         return local_model.state_dict()
 
     m = deepcopy(local_model.state_dict())
+    m = {key: value.cpu() for key, value in m.items()}
     for k in models_state_dict_average.keys():
         # FedDiff update rule: w_local  = w_local - (w_local - w_avg)/||w_local - w_avg||_2
         dist = m[k] - models_state_dict_average[k]

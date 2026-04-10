@@ -13,7 +13,8 @@ from dengine.scenarios import (
     ServerMockClient,
 )
 from dengine.interfaces import MessageBase
-from dengine.utils.utils import model_on_device_context, assert_no_nans
+from dengine.utils.utils import assert_no_nans
+from dengine.scenarios.utils import client_on_device_context
 from dengine.training_strategies.local_update_strategy import TrainingEngine, training_step_output
 from dengine.training_strategies.decorators import register_local_training
 from dengine.scenarios.decorators import register_scenario, register_client
@@ -193,7 +194,7 @@ class FederatedScaffoldScenario(DecentralizedScenarioEngineBase):
             f"**[Client-{client.UUID}][CommunicationRound-{communication_round}]** \n"
             "```"
         )
-        with model_on_device_context(client.model, self._device):
+        with client_on_device_context(client, self._device):
             client.execute_local_train_strategy(communication_round)
             logging.info("```\n```")
             client.test(communication_round, self.test_data)

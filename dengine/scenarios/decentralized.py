@@ -11,7 +11,7 @@ from dataclasses import dataclass
 import torch
 from torch.utils.data import Subset
 
-from dengine.utils.utils import model_on_device_context
+from dengine.scenarios.utils import client_on_device_context
 from dengine.models.utils import model_wise_weighted_average
 from dengine.interfaces import MessageBase
 
@@ -164,7 +164,7 @@ class DecentralizedScenarioEngineBase(AbstractScenarioEngine[DecAvgClient]):
             f"**[Client-{client.UUID}][CommunicationRound-{communication_round}]** \n"
             "```"
         )
-        with model_on_device_context(client.model, self._device):
+        with client_on_device_context(client, self._device):
             client.update(communication_round)
             logging.info("```\n```")
             client.test(communication_round, self.test_data)
@@ -192,6 +192,12 @@ class VanillaDecentralizedSequential(DecentralizedScenarioEngineBase):
             )
 
 
+@deprecated("This class has been refactored to VanillaDecentralizedSequential, please consider refactoring.")
+@register_scenario()
+class VanillaDecentralized(VanillaDecentralizedSequential):
+    pass
+
+
 @register_scenario()
 class DecentralizedShallowSyncReference(DecentralizedScenarioEngineBase):
     def synchronize_client(self, communication_round: int, client: DecAvgClient):
@@ -214,7 +220,7 @@ class VanillaDecentralizedSynch(DecentralizedScenarioEngineBase):
 
         for _round in range(self._max_communication_rounds):
             for _client in self.get_active_clients():
-                with model_on_device_context(_client.model, self._device):
+                with client_on_device_context(_client, self._device):
                     _client.update(_round)
                 self.synchronize_client(_round, _client)
 

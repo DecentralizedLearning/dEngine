@@ -89,7 +89,7 @@ class NXGraph(Graph):
                 raise ValueError(f'Not found: {fpath}')
             logging.info(f"NXGraph, loading from file: {fpath}")
             self.nx_graph = load_networkx_from_edgelist_file(fpath)
-        elif nx_class and nx_class:
+        elif nx_class:
             logging.info(f"NXGraph, generated synthetic graph of type {nx_class} with parameters {kwargs}")
             self.nx_graph = _dynamic_networkx_allocator(nx_class, **kwargs)
         elif preset:
