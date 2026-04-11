@@ -225,7 +225,8 @@ class VanillaDecentralizedSynch(DecentralizedScenarioEngineBase):
                 self.synchronize_client(_round, _client)
 
             for _client in self.get_active_clients():
-                _client.test(_round, self.test_data)
+                with client_on_device_context(_client, self._device):
+                    _client.test(_round, self.test_data)
 
             self.on_communication_round_end(_round)
 
