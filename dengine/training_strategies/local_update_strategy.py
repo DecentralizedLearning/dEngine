@@ -332,8 +332,8 @@ class TrainingEngine(EarlyStoppingBase):
 
 @register_local_training()
 class EngineWithoutEarlyStopping(TrainingEngine):
-    def train(self, net: Module) -> Module:
-        optimizer = self._load_optimizer(net)
+    def train(self, model: ModuleBase, current_time: float) -> ModuleBase:
+        optimizer = self._load_optimizer(model)
         scheduler = self._load_scheduler(optimizer)
 
         epoch_pbar = tqdm(
@@ -348,7 +348,7 @@ class EngineWithoutEarlyStopping(TrainingEngine):
             self.callback.on_training_epoch_start(current_epoch)
 
             batch_iter = enumerate(self._ldr_train)
-            total_samples = len(self._training_data.dataset[self._training_data.indices])
+            total_samples = len(self._training_data)
             batch_iter = tqdm(
                 batch_iter,
                 ascii=True,
@@ -359,7 +359,7 @@ class EngineWithoutEarlyStopping(TrainingEngine):
             cumulated_loss = 0
             for batch_idx, batch_data in batch_iter:
                 self.callback.on_training_batch_start(batch_idx, *batch_data)
-                cumulated_loss += self.training_step(net, optimizer, *batch_data).reduced_loss
+                cumulated_loss += self.training_step(model, optimizer, *batch_data).reduced_loss
                 self.callback.on_training_batch_end(batch_idx, cumulated_loss=cumulated_loss)
 
             if scheduler:
@@ -373,8 +373,19 @@ class EngineWithoutEarlyStopping(TrainingEngine):
             epoch_pbar.set_postfix(epoch_pbar_postfix_dict)
 
             # 5. Finalization
-            self.callback.on_training_epoch_end(current_epoch)
-        return net
+            self.callback.on_training_epoch_end(current_epoch, epoch_loss=epoch_loss)
+
+        self._logging(
+            f'Metrics on the last epoch: '
+            f'{json.dumps(epoch_pbar_postfix_dict)}'
+        )
+        self.callback.on_local_training_end(
+            current_time,
+            training_data=self._training_data,
+            validation_data=self._validation_data,
+            training_loss=epoch_loss,
+        )
+        return model
 
 
 @deprecated("This class has been refactored to TrainingEngine, please consider refactoring.")
