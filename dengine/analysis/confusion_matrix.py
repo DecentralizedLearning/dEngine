@@ -114,6 +114,13 @@ class ExperimentMetric:
     def epochs(self):
         return self.data.shape[1]
 
+    @property
+    def num_nodes(self):
+        return len(self._data)
+
+    def mean(self) -> np.ndarray:
+        return self.data.mean(axis=0)
+
     def truncate_at_epoch_view(self, max_epoch: Union[int, Tuple, slice]) -> Self:
         if isinstance(max_epoch, Tuple):
             if self.rounds == 1:
