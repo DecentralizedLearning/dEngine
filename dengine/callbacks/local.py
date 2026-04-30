@@ -79,12 +79,15 @@ class LossDumpCallback(PeriodicCallback):
         self,
         current_time: float,
         training_loss: float,
-        validation_loss: float,
+        validation_loss: Optional[float] = None,
         **kwargs
     ):
         with NpyAppendArray(self._tr_outfile) as tr_out_file_array:
             tr_out_file_array.append(np.array([training_loss]))
         logging.info(f'Appended trainining loss {round(training_loss, 5)} at {current_time} to: {self._tr_outfile}')
+
+        if not validation_loss:
+            return
 
         with NpyAppendArray(self._valid_outfile) as valid_out_file_array:
             valid_out_file_array.append(np.array([validation_loss]))
