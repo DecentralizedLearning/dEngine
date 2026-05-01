@@ -65,9 +65,11 @@ class BUILTINS:
             ER_MEDIUM = get_config('er_medium.yml', 'configs/core/graph/er_medium.yml')
             ER_SMALL = get_config('er_small.yml', 'configs/core/graph/er_small.yml')
             STAR = get_config('star.yml', 'configs/core/graph/star.yml')
+            STAR_51 = get_config('star_51.yml', 'configs/core/graph/star_51.yml')
 
         class PARTITIONING:
             IID = get_config('iid.yml', 'configs/core/partitioning/iid.yml')
+            IID_BALANCED_EXCLUDE_HUB = get_config('iid_balanced_exclude_hub.yml', 'configs/core/partitioning/iid_balanced_exclude_hub.yml')
             IID_NONIID_HUB = get_config('iid_noniid_hub.yml', 'configs/core/partitioning/iid_noniid_hub.yml')
             NONIID = get_config('noniid.yml', 'configs/core/partitioning/noniid.yml')
 
