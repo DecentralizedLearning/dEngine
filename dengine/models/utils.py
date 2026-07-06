@@ -46,12 +46,12 @@ def model_wise_weighted_average(L: Sequence[Dict[str, Tensor]], alpha_list: Sequ
     '''
     w_avg: Dict[str, Tensor] = deepcopy(L[0])
     for layer in w_avg.keys():
-        w_avg[layer] = w_avg[layer].float() * alpha_list[0]
+        w_avg[layer] = w_avg[layer].float().cpu() * alpha_list[0]
 
     for i in range(1, len(L)):
         ith_model = L[i]
         for layer in w_avg.keys():
-            w_avg[layer] += ith_model[layer].float() * alpha_list[i]
+            w_avg[layer] += ith_model[layer].float().cpu() * alpha_list[i]
 
     return w_avg
 
