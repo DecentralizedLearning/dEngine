@@ -63,20 +63,25 @@ def dump_partition(
     data_partitions: TYPE_DATASET_PARTITIONING,
 ):
     fpath.parent.mkdir(parents=True, exist_ok=True)
+    all_labels_at_zero = dict.fromkeys(dataset_train.unique_targets.tolist(), 0)
 
     with open(fpath, 'w') as f:
         wr = csv.writer(f)
         wr.writerow(["nodeid"] + [str(i) for i in dataset_train.unique_targets.tolist()])
 
         for key, idxs in data_partitions.items():
+            if len(idxs["train"]) == 0:
+                wr.writerow([key] + list(all_labels_at_zero.values()))
+                continue
+
             labels, counters = torch.unique(
                 dataset_train.targets[idxs['train']],
                 return_counts=True
             )
-            all_labels_at_zero = dict(zip(labels.tolist(), counters.tolist()))
+            labels_counter_map = dict(zip(labels.tolist(), counters.tolist()))
 
             # Needed because not all labels are assigned (e.g., EMNIST 'N/A' not in train)
-            res = dict.fromkeys(dataset_train.unique_targets.tolist(), 0) | all_labels_at_zero
+            res = all_labels_at_zero | labels_counter_map
 
             wr.writerow([key] + list(res.values()))
 

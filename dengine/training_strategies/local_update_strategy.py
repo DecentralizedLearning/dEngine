@@ -62,11 +62,14 @@ class EarlyStoppingBase(LocalTrainingEngineInterface):
 
         self._local_epochs = epochs
 
-        self._ldr_train = DataLoader(
-            training_data,
-            self._training_batch_size,
-            shuffle=True
-        )
+        if len(training_data) == 0:
+            self._ldr_train = None
+        else:
+            self._ldr_train = DataLoader(
+                training_data,
+                self._training_batch_size,
+                shuffle=True
+            )
         self._training_data = training_data
         self._validation_data = validation_data
 
@@ -93,6 +96,15 @@ class EarlyStoppingBase(LocalTrainingEngineInterface):
             return mock_call
         return logging.info
 
+    @property
+    def _logging_warning(self):
+        def mock_call(s: str):
+            pass
+
+        if not self._verbose:
+            return mock_call
+        return logging.warning
+
     # ...................................... #
     # TRAINING LOOP
     # ...................................... #
@@ -106,6 +118,10 @@ class EarlyStoppingBase(LocalTrainingEngineInterface):
         raise NotImplementedError()
 
     def train(self, model: ModuleBase, current_time: float) -> ModuleBase:
+        if self._ldr_train is None:
+            self._logging_warning("Empty dataset, training is ignored!")
+            return model
+
         self._callback.on_local_training_start(current_time)
 
         best_performing_net = copy.deepcopy(model)
@@ -333,6 +349,10 @@ class TrainingEngine(EarlyStoppingBase):
 @register_local_training()
 class EngineWithoutEarlyStopping(TrainingEngine):
     def train(self, model: ModuleBase, current_time: float) -> ModuleBase:
+        if self._ldr_train is None:
+            self._logging_warning("Empty dataset, training is ignored!")
+            return model
+
         optimizer = self._load_optimizer(model)
         scheduler = self._load_scheduler(optimizer)
 
