@@ -74,13 +74,12 @@ def unsafe_compute_layer_wise_weighted_average(
             grouped_layers[layer].append(ith_model[layer].float().cpu())
 
     t_custom_layers_alphas = {k: torch.Tensor(v) / sum(v) for k, v in custom_layers_alphas.items()}
-
     updated_dict = deepcopy(reference_dict)
     for layer_name, weight_list in grouped_layers.items():
         if layer_name in t_custom_layers_alphas:
             layer_alpha = t_custom_layers_alphas[layer_name]
         else:
-            layer_alpha = torch.Tensor(len(weight_list))
+            layer_alpha = torch.ones(len(weight_list)) / len(weight_list)
         stacked_weights = torch.stack(weight_list)
         layer_alpha_broadcast = layer_alpha.view(-1, *([1] * (stacked_weights.ndim - 1)))
         updated_dict[layer_name] = (stacked_weights * layer_alpha_broadcast).sum(dim=0)
