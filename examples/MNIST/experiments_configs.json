@@ -1,0 +1,1310 @@
+[
+  {
+    "EXPERIMENT_VERSION": "1",
+    "target": null,
+    "experiments_directory_root": "/home/samuele.sabella/Desktop/DecentralizedLearning/dEngine/examples/MNIST/logs",
+    "name": "cifar10,Centralized,TinyCNN",
+    "seed": 123,
+    "dataset": {
+      "train": {
+        "target": "mnist",
+        "arguments": {
+          "train": true
+        }
+      },
+      "test": {
+        "target": "mnist",
+        "arguments": {
+          "train": false
+        }
+      },
+      "postprocessing": null
+    },
+    "partitioning": {
+      "target": "zipf_noniid_truncated",
+      "arguments": {
+        "minimum_training_samples_per_class": 8,
+        "validation_percentage": 0.02,
+        "zipf_alpha": 3.5
+      }
+    },
+    "graph": {
+      "target": "NXGraph",
+      "arguments": {
+        "nx_class": "complete_graph",
+        "n": 1
+      }
+    },
+    "scenario": {
+      "target": "CentralizedScenarioEngine",
+      "arguments": null
+    },
+    "client": {
+      "target": "CentralizedClient",
+      "arguments": null,
+      "training_engine": {
+        "target": "TrainingEngine",
+        "arguments": {
+          "optimizer": "SGD",
+          "epochs": 1500,
+          "lr": 0.001,
+          "sgd_momentum": 0.9,
+          "training_batch_size": 32,
+          "validation_batch_size": 128
+        }
+      },
+      "local_model": {
+        "target": "TinyCNN",
+        "arguments": null
+      }
+    },
+    "callbacks": [
+      {
+        "target": "LossDumpCallback",
+        "arguments": null
+      },
+      {
+        "target": "ConfusionMatrixDumpOnEpochEndCallback",
+        "arguments": null
+      }
+    ]
+  },
+  {
+    "EXPERIMENT_VERSION": "1",
+    "target": null,
+    "experiments_directory_root": "/home/samuele.sabella/Desktop/DecentralizedLearning/dEngine/examples/MNIST/logs",
+    "name": "cifar10,BA,DecAvg,TinyCNN",
+    "seed": 123,
+    "dataset": {
+      "train": {
+        "target": "mnist",
+        "arguments": {
+          "train": true
+        }
+      },
+      "test": {
+        "target": "mnist",
+        "arguments": {
+          "train": false
+        }
+      },
+      "postprocessing": null
+    },
+    "partitioning": {
+      "target": "zipf_noniid_truncated",
+      "arguments": {
+        "minimum_training_samples_per_class": 8,
+        "validation_percentage": 0.1,
+        "zipf_alpha": 3.5
+      }
+    },
+    "graph": {
+      "target": "NXGraph",
+      "arguments": {
+        "nx_class": "barabasi_albert_graph",
+        "n": 50,
+        "m": 1,
+        "seed": 123
+      }
+    },
+    "scenario": {
+      "target": "VanillaDecentralizedSynch",
+      "arguments": {
+        "common_init": true,
+        "max_communication_rounds": 200
+      }
+    },
+    "client": {
+      "target": "DecAvgClient",
+      "arguments": {
+        "include_myself": true,
+        "use_weighted_avg": true
+      },
+      "training_engine": {
+        "target": "TrainingEngine",
+        "arguments": {
+          "optimizer": "Adam",
+          "epochs": 5,
+          "lr": 0.0003,
+          "sgd_momentum": 0.9,
+          "training_batch_size": 32,
+          "validation_batch_size": 32,
+          "adam_weight_decay": 0.001,
+          "scheduler": "cosine",
+          "patience": 5
+        }
+      },
+      "local_model": {
+        "target": "TinyCNN",
+        "arguments": null
+      }
+    },
+    "callbacks": [
+      {
+        "target": "LossDumpCallback",
+        "arguments": null
+      },
+      {
+        "target": "ConfusionMatrixDumpOnCommRoundEndCallback",
+        "arguments": null
+      },
+      {
+        "target": "ConfusionMatrixDumpOnAggregationEnd",
+        "arguments": null
+      }
+    ]
+  },
+  {
+    "EXPERIMENT_VERSION": "1",
+    "target": null,
+    "experiments_directory_root": "/home/samuele.sabella/Desktop/DecentralizedLearning/dEngine/examples/MNIST/logs",
+    "name": "cifar10,ER,DecAvg,TinyCNN",
+    "seed": 123,
+    "dataset": {
+      "train": {
+        "target": "mnist",
+        "arguments": {
+          "train": true
+        }
+      },
+      "test": {
+        "target": "mnist",
+        "arguments": {
+          "train": false
+        }
+      },
+      "postprocessing": null
+    },
+    "partitioning": {
+      "target": "zipf_noniid_truncated",
+      "arguments": {
+        "minimum_training_samples_per_class": 8,
+        "validation_percentage": 0.1,
+        "zipf_alpha": 3.5
+      }
+    },
+    "graph": {
+      "target": "NXGraph",
+      "arguments": {
+        "nx_class": "erdos_renyi_graph",
+        "n": 50,
+        "p": 0.2,
+        "seed": 123
+      }
+    },
+    "scenario": {
+      "target": "VanillaDecentralizedSynch",
+      "arguments": {
+        "common_init": true,
+        "max_communication_rounds": 200
+      }
+    },
+    "client": {
+      "target": "DecAvgClient",
+      "arguments": {
+        "include_myself": true,
+        "use_weighted_avg": true
+      },
+      "training_engine": {
+        "target": "TrainingEngine",
+        "arguments": {
+          "optimizer": "Adam",
+          "epochs": 5,
+          "lr": 0.0003,
+          "sgd_momentum": 0.9,
+          "training_batch_size": 32,
+          "validation_batch_size": 32,
+          "adam_weight_decay": 0.001,
+          "scheduler": "cosine",
+          "patience": 5
+        }
+      },
+      "local_model": {
+        "target": "TinyCNN",
+        "arguments": null
+      }
+    },
+    "callbacks": [
+      {
+        "target": "LossDumpCallback",
+        "arguments": null
+      },
+      {
+        "target": "ConfusionMatrixDumpOnCommRoundEndCallback",
+        "arguments": null
+      },
+      {
+        "target": "ConfusionMatrixDumpOnAggregationEnd",
+        "arguments": null
+      }
+    ]
+  },
+  {
+    "EXPERIMENT_VERSION": "1",
+    "target": null,
+    "experiments_directory_root": "/home/samuele.sabella/Desktop/DecentralizedLearning/dEngine/examples/MNIST/logs",
+    "name": "cifar10,FedAvg,TinyCNN",
+    "seed": 123,
+    "dataset": {
+      "train": {
+        "target": "mnist",
+        "arguments": {
+          "train": true
+        }
+      },
+      "test": {
+        "target": "mnist",
+        "arguments": {
+          "train": false
+        }
+      },
+      "postprocessing": null
+    },
+    "partitioning": {
+      "target": "zipf_noniid_truncated",
+      "arguments": {
+        "minimum_training_samples_per_class": 8,
+        "validation_percentage": 0.1,
+        "zipf_alpha": 3.5
+      }
+    },
+    "graph": {
+      "target": "NXGraph",
+      "arguments": {
+        "nx_class": "star_graph",
+        "n": 51
+      }
+    },
+    "scenario": {
+      "target": "VanillaDecentralizedSynch",
+      "arguments": {
+        "common_init": true,
+        "max_communication_rounds": 200
+      }
+    },
+    "client": {
+      "target": "DecAvgClient",
+      "arguments": {
+        "include_myself": true,
+        "use_weighted_avg": true
+      },
+      "training_engine": {
+        "target": "TrainingEngine",
+        "arguments": {
+          "optimizer": "Adam",
+          "epochs": 5,
+          "lr": 0.0003,
+          "sgd_momentum": 0.9,
+          "training_batch_size": 32,
+          "validation_batch_size": 32,
+          "adam_weight_decay": 0.001,
+          "scheduler": "cosine",
+          "patience": 5
+        }
+      },
+      "local_model": {
+        "target": "TinyCNN",
+        "arguments": null
+      }
+    },
+    "callbacks": [
+      {
+        "target": "LossDumpCallback",
+        "arguments": null
+      },
+      {
+        "target": "ConfusionMatrixDumpOnCommRoundEndCallback",
+        "arguments": null
+      },
+      {
+        "target": "ConfusionMatrixDumpOnAggregationEnd",
+        "arguments": null
+      }
+    ]
+  },
+  {
+    "EXPERIMENT_VERSION": "1",
+    "target": null,
+    "experiments_directory_root": "/home/samuele.sabella/Desktop/DecentralizedLearning/dEngine/examples/MNIST/logs",
+    "name": "cifar10,Centralized,MobileNetV3Classifier",
+    "seed": 123,
+    "dataset": {
+      "train": {
+        "target": "mnist",
+        "arguments": {
+          "train": true
+        }
+      },
+      "test": {
+        "target": "mnist",
+        "arguments": {
+          "train": false
+        }
+      },
+      "postprocessing": null
+    },
+    "partitioning": {
+      "target": "zipf_noniid_truncated",
+      "arguments": {
+        "minimum_training_samples_per_class": 8,
+        "validation_percentage": 0.02,
+        "zipf_alpha": 3.5
+      }
+    },
+    "graph": {
+      "target": "NXGraph",
+      "arguments": {
+        "nx_class": "complete_graph",
+        "n": 1
+      }
+    },
+    "scenario": {
+      "target": "CentralizedScenarioEngine",
+      "arguments": null
+    },
+    "client": {
+      "target": "CentralizedClient",
+      "arguments": null,
+      "training_engine": {
+        "target": "TrainingEngine",
+        "arguments": {
+          "optimizer": "SGD",
+          "epochs": 1500,
+          "lr": 0.001,
+          "sgd_momentum": 0.9,
+          "training_batch_size": 32,
+          "validation_batch_size": 128
+        }
+      },
+      "local_model": {
+        "target": "MobileNetV3Classifier",
+        "arguments": null
+      }
+    },
+    "callbacks": [
+      {
+        "target": "LossDumpCallback",
+        "arguments": null
+      },
+      {
+        "target": "ConfusionMatrixDumpOnEpochEndCallback",
+        "arguments": null
+      }
+    ]
+  },
+  {
+    "EXPERIMENT_VERSION": "1",
+    "target": null,
+    "experiments_directory_root": "/home/samuele.sabella/Desktop/DecentralizedLearning/dEngine/examples/MNIST/logs",
+    "name": "cifar10,BA,DecAvg,MobileNetV3Classifier",
+    "seed": 123,
+    "dataset": {
+      "train": {
+        "target": "mnist",
+        "arguments": {
+          "train": true
+        }
+      },
+      "test": {
+        "target": "mnist",
+        "arguments": {
+          "train": false
+        }
+      },
+      "postprocessing": null
+    },
+    "partitioning": {
+      "target": "zipf_noniid_truncated",
+      "arguments": {
+        "minimum_training_samples_per_class": 8,
+        "validation_percentage": 0.1,
+        "zipf_alpha": 3.5
+      }
+    },
+    "graph": {
+      "target": "NXGraph",
+      "arguments": {
+        "nx_class": "barabasi_albert_graph",
+        "n": 50,
+        "m": 1,
+        "seed": 123
+      }
+    },
+    "scenario": {
+      "target": "VanillaDecentralizedSynch",
+      "arguments": {
+        "common_init": true,
+        "max_communication_rounds": 200
+      }
+    },
+    "client": {
+      "target": "DecAvgClient",
+      "arguments": {
+        "include_myself": true,
+        "use_weighted_avg": true
+      },
+      "training_engine": {
+        "target": "TrainingEngine",
+        "arguments": {
+          "optimizer": "Adam",
+          "epochs": 5,
+          "lr": 0.0003,
+          "sgd_momentum": 0.9,
+          "training_batch_size": 32,
+          "validation_batch_size": 32,
+          "adam_weight_decay": 0.001,
+          "scheduler": "cosine",
+          "patience": 5
+        }
+      },
+      "local_model": {
+        "target": "MobileNetV3Classifier",
+        "arguments": null
+      }
+    },
+    "callbacks": [
+      {
+        "target": "LossDumpCallback",
+        "arguments": null
+      },
+      {
+        "target": "ConfusionMatrixDumpOnCommRoundEndCallback",
+        "arguments": null
+      },
+      {
+        "target": "ConfusionMatrixDumpOnAggregationEnd",
+        "arguments": null
+      }
+    ]
+  },
+  {
+    "EXPERIMENT_VERSION": "1",
+    "target": null,
+    "experiments_directory_root": "/home/samuele.sabella/Desktop/DecentralizedLearning/dEngine/examples/MNIST/logs",
+    "name": "cifar10,ER,DecAvg,MobileNetV3Classifier",
+    "seed": 123,
+    "dataset": {
+      "train": {
+        "target": "mnist",
+        "arguments": {
+          "train": true
+        }
+      },
+      "test": {
+        "target": "mnist",
+        "arguments": {
+          "train": false
+        }
+      },
+      "postprocessing": null
+    },
+    "partitioning": {
+      "target": "zipf_noniid_truncated",
+      "arguments": {
+        "minimum_training_samples_per_class": 8,
+        "validation_percentage": 0.1,
+        "zipf_alpha": 3.5
+      }
+    },
+    "graph": {
+      "target": "NXGraph",
+      "arguments": {
+        "nx_class": "erdos_renyi_graph",
+        "n": 50,
+        "p": 0.2,
+        "seed": 123
+      }
+    },
+    "scenario": {
+      "target": "VanillaDecentralizedSynch",
+      "arguments": {
+        "common_init": true,
+        "max_communication_rounds": 200
+      }
+    },
+    "client": {
+      "target": "DecAvgClient",
+      "arguments": {
+        "include_myself": true,
+        "use_weighted_avg": true
+      },
+      "training_engine": {
+        "target": "TrainingEngine",
+        "arguments": {
+          "optimizer": "Adam",
+          "epochs": 5,
+          "lr": 0.0003,
+          "sgd_momentum": 0.9,
+          "training_batch_size": 32,
+          "validation_batch_size": 32,
+          "adam_weight_decay": 0.001,
+          "scheduler": "cosine",
+          "patience": 5
+        }
+      },
+      "local_model": {
+        "target": "MobileNetV3Classifier",
+        "arguments": null
+      }
+    },
+    "callbacks": [
+      {
+        "target": "LossDumpCallback",
+        "arguments": null
+      },
+      {
+        "target": "ConfusionMatrixDumpOnCommRoundEndCallback",
+        "arguments": null
+      },
+      {
+        "target": "ConfusionMatrixDumpOnAggregationEnd",
+        "arguments": null
+      }
+    ]
+  },
+  {
+    "EXPERIMENT_VERSION": "1",
+    "target": null,
+    "experiments_directory_root": "/home/samuele.sabella/Desktop/DecentralizedLearning/dEngine/examples/MNIST/logs",
+    "name": "cifar10,FedAvg,MobileNetV3Classifier",
+    "seed": 123,
+    "dataset": {
+      "train": {
+        "target": "mnist",
+        "arguments": {
+          "train": true
+        }
+      },
+      "test": {
+        "target": "mnist",
+        "arguments": {
+          "train": false
+        }
+      },
+      "postprocessing": null
+    },
+    "partitioning": {
+      "target": "zipf_noniid_truncated",
+      "arguments": {
+        "minimum_training_samples_per_class": 8,
+        "validation_percentage": 0.1,
+        "zipf_alpha": 3.5
+      }
+    },
+    "graph": {
+      "target": "NXGraph",
+      "arguments": {
+        "nx_class": "star_graph",
+        "n": 51
+      }
+    },
+    "scenario": {
+      "target": "VanillaDecentralizedSynch",
+      "arguments": {
+        "common_init": true,
+        "max_communication_rounds": 200
+      }
+    },
+    "client": {
+      "target": "DecAvgClient",
+      "arguments": {
+        "include_myself": true,
+        "use_weighted_avg": true
+      },
+      "training_engine": {
+        "target": "TrainingEngine",
+        "arguments": {
+          "optimizer": "Adam",
+          "epochs": 5,
+          "lr": 0.0003,
+          "sgd_momentum": 0.9,
+          "training_batch_size": 32,
+          "validation_batch_size": 32,
+          "adam_weight_decay": 0.001,
+          "scheduler": "cosine",
+          "patience": 5
+        }
+      },
+      "local_model": {
+        "target": "MobileNetV3Classifier",
+        "arguments": null
+      }
+    },
+    "callbacks": [
+      {
+        "target": "LossDumpCallback",
+        "arguments": null
+      },
+      {
+        "target": "ConfusionMatrixDumpOnCommRoundEndCallback",
+        "arguments": null
+      },
+      {
+        "target": "ConfusionMatrixDumpOnAggregationEnd",
+        "arguments": null
+      }
+    ]
+  },
+  {
+    "EXPERIMENT_VERSION": "1",
+    "target": null,
+    "experiments_directory_root": "/home/samuele.sabella/Desktop/DecentralizedLearning/dEngine/examples/MNIST/logs",
+    "name": "cifar10,Centralized,WideResNetClassifier",
+    "seed": 123,
+    "dataset": {
+      "train": {
+        "target": "mnist",
+        "arguments": {
+          "train": true
+        }
+      },
+      "test": {
+        "target": "mnist",
+        "arguments": {
+          "train": false
+        }
+      },
+      "postprocessing": null
+    },
+    "partitioning": {
+      "target": "zipf_noniid_truncated",
+      "arguments": {
+        "minimum_training_samples_per_class": 8,
+        "validation_percentage": 0.02,
+        "zipf_alpha": 3.5
+      }
+    },
+    "graph": {
+      "target": "NXGraph",
+      "arguments": {
+        "nx_class": "complete_graph",
+        "n": 1
+      }
+    },
+    "scenario": {
+      "target": "CentralizedScenarioEngine",
+      "arguments": null
+    },
+    "client": {
+      "target": "CentralizedClient",
+      "arguments": null,
+      "training_engine": {
+        "target": "TrainingEngine",
+        "arguments": {
+          "optimizer": "SGD",
+          "epochs": 1500,
+          "lr": 0.001,
+          "sgd_momentum": 0.9,
+          "training_batch_size": 32,
+          "validation_batch_size": 128
+        }
+      },
+      "local_model": {
+        "target": "WideResNetClassifier",
+        "arguments": {
+          "depth": 10,
+          "dropout": 0.3,
+          "widen_factor": 5
+        }
+      }
+    },
+    "callbacks": [
+      {
+        "target": "LossDumpCallback",
+        "arguments": null
+      },
+      {
+        "target": "ConfusionMatrixDumpOnEpochEndCallback",
+        "arguments": null
+      }
+    ]
+  },
+  {
+    "EXPERIMENT_VERSION": "1",
+    "target": null,
+    "experiments_directory_root": "/home/samuele.sabella/Desktop/DecentralizedLearning/dEngine/examples/MNIST/logs",
+    "name": "cifar10,BA,DecAvg,WideResNetClassifier",
+    "seed": 123,
+    "dataset": {
+      "train": {
+        "target": "mnist",
+        "arguments": {
+          "train": true
+        }
+      },
+      "test": {
+        "target": "mnist",
+        "arguments": {
+          "train": false
+        }
+      },
+      "postprocessing": null
+    },
+    "partitioning": {
+      "target": "zipf_noniid_truncated",
+      "arguments": {
+        "minimum_training_samples_per_class": 8,
+        "validation_percentage": 0.1,
+        "zipf_alpha": 3.5
+      }
+    },
+    "graph": {
+      "target": "NXGraph",
+      "arguments": {
+        "nx_class": "barabasi_albert_graph",
+        "n": 50,
+        "m": 1,
+        "seed": 123
+      }
+    },
+    "scenario": {
+      "target": "VanillaDecentralizedSynch",
+      "arguments": {
+        "common_init": true,
+        "max_communication_rounds": 200
+      }
+    },
+    "client": {
+      "target": "DecAvgClient",
+      "arguments": {
+        "include_myself": true,
+        "use_weighted_avg": true
+      },
+      "training_engine": {
+        "target": "TrainingEngine",
+        "arguments": {
+          "optimizer": "Adam",
+          "epochs": 5,
+          "lr": 0.0003,
+          "sgd_momentum": 0.9,
+          "training_batch_size": 32,
+          "validation_batch_size": 32,
+          "adam_weight_decay": 0.001,
+          "scheduler": "cosine",
+          "patience": 5
+        }
+      },
+      "local_model": {
+        "target": "WideResNetClassifier",
+        "arguments": {
+          "depth": 10,
+          "dropout": 0.3,
+          "widen_factor": 5
+        }
+      }
+    },
+    "callbacks": [
+      {
+        "target": "LossDumpCallback",
+        "arguments": null
+      },
+      {
+        "target": "ConfusionMatrixDumpOnCommRoundEndCallback",
+        "arguments": null
+      },
+      {
+        "target": "ConfusionMatrixDumpOnAggregationEnd",
+        "arguments": null
+      }
+    ]
+  },
+  {
+    "EXPERIMENT_VERSION": "1",
+    "target": null,
+    "experiments_directory_root": "/home/samuele.sabella/Desktop/DecentralizedLearning/dEngine/examples/MNIST/logs",
+    "name": "cifar10,ER,DecAvg,WideResNetClassifier",
+    "seed": 123,
+    "dataset": {
+      "train": {
+        "target": "mnist",
+        "arguments": {
+          "train": true
+        }
+      },
+      "test": {
+        "target": "mnist",
+        "arguments": {
+          "train": false
+        }
+      },
+      "postprocessing": null
+    },
+    "partitioning": {
+      "target": "zipf_noniid_truncated",
+      "arguments": {
+        "minimum_training_samples_per_class": 8,
+        "validation_percentage": 0.1,
+        "zipf_alpha": 3.5
+      }
+    },
+    "graph": {
+      "target": "NXGraph",
+      "arguments": {
+        "nx_class": "erdos_renyi_graph",
+        "n": 50,
+        "p": 0.2,
+        "seed": 123
+      }
+    },
+    "scenario": {
+      "target": "VanillaDecentralizedSynch",
+      "arguments": {
+        "common_init": true,
+        "max_communication_rounds": 200
+      }
+    },
+    "client": {
+      "target": "DecAvgClient",
+      "arguments": {
+        "include_myself": true,
+        "use_weighted_avg": true
+      },
+      "training_engine": {
+        "target": "TrainingEngine",
+        "arguments": {
+          "optimizer": "Adam",
+          "epochs": 5,
+          "lr": 0.0003,
+          "sgd_momentum": 0.9,
+          "training_batch_size": 32,
+          "validation_batch_size": 32,
+          "adam_weight_decay": 0.001,
+          "scheduler": "cosine",
+          "patience": 5
+        }
+      },
+      "local_model": {
+        "target": "WideResNetClassifier",
+        "arguments": {
+          "depth": 10,
+          "dropout": 0.3,
+          "widen_factor": 5
+        }
+      }
+    },
+    "callbacks": [
+      {
+        "target": "LossDumpCallback",
+        "arguments": null
+      },
+      {
+        "target": "ConfusionMatrixDumpOnCommRoundEndCallback",
+        "arguments": null
+      },
+      {
+        "target": "ConfusionMatrixDumpOnAggregationEnd",
+        "arguments": null
+      }
+    ]
+  },
+  {
+    "EXPERIMENT_VERSION": "1",
+    "target": null,
+    "experiments_directory_root": "/home/samuele.sabella/Desktop/DecentralizedLearning/dEngine/examples/MNIST/logs",
+    "name": "cifar10,FedAvg,WideResNetClassifier",
+    "seed": 123,
+    "dataset": {
+      "train": {
+        "target": "mnist",
+        "arguments": {
+          "train": true
+        }
+      },
+      "test": {
+        "target": "mnist",
+        "arguments": {
+          "train": false
+        }
+      },
+      "postprocessing": null
+    },
+    "partitioning": {
+      "target": "zipf_noniid_truncated",
+      "arguments": {
+        "minimum_training_samples_per_class": 8,
+        "validation_percentage": 0.1,
+        "zipf_alpha": 3.5
+      }
+    },
+    "graph": {
+      "target": "NXGraph",
+      "arguments": {
+        "nx_class": "star_graph",
+        "n": 51
+      }
+    },
+    "scenario": {
+      "target": "VanillaDecentralizedSynch",
+      "arguments": {
+        "common_init": true,
+        "max_communication_rounds": 200
+      }
+    },
+    "client": {
+      "target": "DecAvgClient",
+      "arguments": {
+        "include_myself": true,
+        "use_weighted_avg": true
+      },
+      "training_engine": {
+        "target": "TrainingEngine",
+        "arguments": {
+          "optimizer": "Adam",
+          "epochs": 5,
+          "lr": 0.0003,
+          "sgd_momentum": 0.9,
+          "training_batch_size": 32,
+          "validation_batch_size": 32,
+          "adam_weight_decay": 0.001,
+          "scheduler": "cosine",
+          "patience": 5
+        }
+      },
+      "local_model": {
+        "target": "WideResNetClassifier",
+        "arguments": {
+          "depth": 10,
+          "dropout": 0.3,
+          "widen_factor": 5
+        }
+      }
+    },
+    "callbacks": [
+      {
+        "target": "LossDumpCallback",
+        "arguments": null
+      },
+      {
+        "target": "ConfusionMatrixDumpOnCommRoundEndCallback",
+        "arguments": null
+      },
+      {
+        "target": "ConfusionMatrixDumpOnAggregationEnd",
+        "arguments": null
+      }
+    ]
+  },
+  {
+    "EXPERIMENT_VERSION": "1",
+    "target": null,
+    "experiments_directory_root": "/home/samuele.sabella/Desktop/DecentralizedLearning/dEngine/examples/MNIST/logs",
+    "name": "cifar10,Centralized,ViT",
+    "seed": 123,
+    "dataset": {
+      "train": {
+        "target": "mnist",
+        "arguments": {
+          "train": true
+        }
+      },
+      "test": {
+        "target": "mnist",
+        "arguments": {
+          "train": false
+        }
+      },
+      "postprocessing": null
+    },
+    "partitioning": {
+      "target": "zipf_noniid_truncated",
+      "arguments": {
+        "minimum_training_samples_per_class": 8,
+        "validation_percentage": 0.02,
+        "zipf_alpha": 3.5
+      }
+    },
+    "graph": {
+      "target": "NXGraph",
+      "arguments": {
+        "nx_class": "complete_graph",
+        "n": 1
+      }
+    },
+    "scenario": {
+      "target": "CentralizedScenarioEngine",
+      "arguments": null
+    },
+    "client": {
+      "target": "CentralizedClient",
+      "arguments": null,
+      "training_engine": {
+        "target": "TrainingEngine",
+        "arguments": {
+          "optimizer": "SGD",
+          "epochs": 1500,
+          "lr": 0.001,
+          "sgd_momentum": 0.9,
+          "training_batch_size": 32,
+          "validation_batch_size": 128
+        }
+      },
+      "local_model": {
+        "target": "ViT",
+        "arguments": null
+      }
+    },
+    "callbacks": [
+      {
+        "target": "LossDumpCallback",
+        "arguments": null
+      },
+      {
+        "target": "ConfusionMatrixDumpOnEpochEndCallback",
+        "arguments": null
+      }
+    ]
+  },
+  {
+    "EXPERIMENT_VERSION": "1",
+    "target": null,
+    "experiments_directory_root": "/home/samuele.sabella/Desktop/DecentralizedLearning/dEngine/examples/MNIST/logs",
+    "name": "cifar10,BA,DecAvg,ViT",
+    "seed": 123,
+    "dataset": {
+      "train": {
+        "target": "mnist",
+        "arguments": {
+          "train": true
+        }
+      },
+      "test": {
+        "target": "mnist",
+        "arguments": {
+          "train": false
+        }
+      },
+      "postprocessing": null
+    },
+    "partitioning": {
+      "target": "zipf_noniid_truncated",
+      "arguments": {
+        "minimum_training_samples_per_class": 8,
+        "validation_percentage": 0.1,
+        "zipf_alpha": 3.5
+      }
+    },
+    "graph": {
+      "target": "NXGraph",
+      "arguments": {
+        "nx_class": "barabasi_albert_graph",
+        "n": 50,
+        "m": 1,
+        "seed": 123
+      }
+    },
+    "scenario": {
+      "target": "VanillaDecentralizedSynch",
+      "arguments": {
+        "common_init": true,
+        "max_communication_rounds": 200
+      }
+    },
+    "client": {
+      "target": "DecAvgClient",
+      "arguments": {
+        "include_myself": true,
+        "use_weighted_avg": true
+      },
+      "training_engine": {
+        "target": "TrainingEngine",
+        "arguments": {
+          "optimizer": "Adam",
+          "epochs": 5,
+          "lr": 0.0003,
+          "sgd_momentum": 0.9,
+          "training_batch_size": 32,
+          "validation_batch_size": 32,
+          "adam_weight_decay": 0.001,
+          "scheduler": "cosine",
+          "patience": 5
+        }
+      },
+      "local_model": {
+        "target": "ViT",
+        "arguments": null
+      }
+    },
+    "callbacks": [
+      {
+        "target": "LossDumpCallback",
+        "arguments": null
+      },
+      {
+        "target": "ConfusionMatrixDumpOnCommRoundEndCallback",
+        "arguments": null
+      },
+      {
+        "target": "ConfusionMatrixDumpOnAggregationEnd",
+        "arguments": null
+      }
+    ]
+  },
+  {
+    "EXPERIMENT_VERSION": "1",
+    "target": null,
+    "experiments_directory_root": "/home/samuele.sabella/Desktop/DecentralizedLearning/dEngine/examples/MNIST/logs",
+    "name": "cifar10,ER,DecAvg,ViT",
+    "seed": 123,
+    "dataset": {
+      "train": {
+        "target": "mnist",
+        "arguments": {
+          "train": true
+        }
+      },
+      "test": {
+        "target": "mnist",
+        "arguments": {
+          "train": false
+        }
+      },
+      "postprocessing": null
+    },
+    "partitioning": {
+      "target": "zipf_noniid_truncated",
+      "arguments": {
+        "minimum_training_samples_per_class": 8,
+        "validation_percentage": 0.1,
+        "zipf_alpha": 3.5
+      }
+    },
+    "graph": {
+      "target": "NXGraph",
+      "arguments": {
+        "nx_class": "erdos_renyi_graph",
+        "n": 50,
+        "p": 0.2,
+        "seed": 123
+      }
+    },
+    "scenario": {
+      "target": "VanillaDecentralizedSynch",
+      "arguments": {
+        "common_init": true,
+        "max_communication_rounds": 200
+      }
+    },
+    "client": {
+      "target": "DecAvgClient",
+      "arguments": {
+        "include_myself": true,
+        "use_weighted_avg": true
+      },
+      "training_engine": {
+        "target": "TrainingEngine",
+        "arguments": {
+          "optimizer": "Adam",
+          "epochs": 5,
+          "lr": 0.0003,
+          "sgd_momentum": 0.9,
+          "training_batch_size": 32,
+          "validation_batch_size": 32,
+          "adam_weight_decay": 0.001,
+          "scheduler": "cosine",
+          "patience": 5
+        }
+      },
+      "local_model": {
+        "target": "ViT",
+        "arguments": null
+      }
+    },
+    "callbacks": [
+      {
+        "target": "LossDumpCallback",
+        "arguments": null
+      },
+      {
+        "target": "ConfusionMatrixDumpOnCommRoundEndCallback",
+        "arguments": null
+      },
+      {
+        "target": "ConfusionMatrixDumpOnAggregationEnd",
+        "arguments": null
+      }
+    ]
+  },
+  {
+    "EXPERIMENT_VERSION": "1",
+    "target": null,
+    "experiments_directory_root": "/home/samuele.sabella/Desktop/DecentralizedLearning/dEngine/examples/MNIST/logs",
+    "name": "cifar10,FedAvg,ViT",
+    "seed": 123,
+    "dataset": {
+      "train": {
+        "target": "mnist",
+        "arguments": {
+          "train": true
+        }
+      },
+      "test": {
+        "target": "mnist",
+        "arguments": {
+          "train": false
+        }
+      },
+      "postprocessing": null
+    },
+    "partitioning": {
+      "target": "zipf_noniid_truncated",
+      "arguments": {
+        "minimum_training_samples_per_class": 8,
+        "validation_percentage": 0.1,
+        "zipf_alpha": 3.5
+      }
+    },
+    "graph": {
+      "target": "NXGraph",
+      "arguments": {
+        "nx_class": "star_graph",
+        "n": 51
+      }
+    },
+    "scenario": {
+      "target": "VanillaDecentralizedSynch",
+      "arguments": {
+        "common_init": true,
+        "max_communication_rounds": 200
+      }
+    },
+    "client": {
+      "target": "DecAvgClient",
+      "arguments": {
+        "include_myself": true,
+        "use_weighted_avg": true
+      },
+      "training_engine": {
+        "target": "TrainingEngine",
+        "arguments": {
+          "optimizer": "Adam",
+          "epochs": 5,
+          "lr": 0.0003,
+          "sgd_momentum": 0.9,
+          "training_batch_size": 32,
+          "validation_batch_size": 32,
+          "adam_weight_decay": 0.001,
+          "scheduler": "cosine",
+          "patience": 5
+        }
+      },
+      "local_model": {
+        "target": "ViT",
+        "arguments": null
+      }
+    },
+    "callbacks": [
+      {
+        "target": "LossDumpCallback",
+        "arguments": null
+      },
+      {
+        "target": "ConfusionMatrixDumpOnCommRoundEndCallback",
+        "arguments": null
+      },
+      {
+        "target": "ConfusionMatrixDumpOnAggregationEnd",
+        "arguments": null
+      }
+    ]
+  }
+]

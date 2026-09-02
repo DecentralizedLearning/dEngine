@@ -1,0 +1,13 @@
+callbacks:
+  - target: LossDumpCallback
+  - target: ConfusionMatrixDumpOnCommRoundEndCallback
+  - target: ConfusionMatrixDumpOnAggregationEnd
+
+partitioning:
+  arguments:
+    minimum_training_samples_per_class: 8
+    validation_percentage: 0.02
+    zipf_alpha: 3.5  # or 1.2
+  target: zipf_noniid_truncated
+
+seed: 123
