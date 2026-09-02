@@ -57,6 +57,9 @@ class LossDumpCallback(PeriodicCallback):
         self._tr_outfile = self._outfolder / 'round_loss_tr.npy'
         self._tr_outfile.parent.mkdir(parents=True, exist_ok=True)
 
+        self._tr_epoch_outfile = self._outfolder / 'training_epoch_end.npy'
+        self._tr_epoch_outfile.parent.mkdir(parents=True, exist_ok=True)
+
         self._valid_outfile = self._outfolder / 'round_loss_valid.npy'
         self._valid_outfile.parent.mkdir(parents=True, exist_ok=True)
 
@@ -92,6 +95,10 @@ class LossDumpCallback(PeriodicCallback):
         with NpyAppendArray(self._valid_outfile) as valid_out_file_array:
             valid_out_file_array.append(np.array([validation_loss]))
         logging.info(f'Appended validation loss {round(validation_loss, 5)} at {current_time} to: {self._valid_outfile}')
+
+    def training_epoch_end(self, epoch: int, epoch_loss: float, **kwargs):
+        with NpyAppendArray(self._tr_epoch_outfile) as epoch_out_file_array:
+            epoch_out_file_array.append(np.array([epoch_loss]))
 
 
 class ConfusionMatrixDumpBase(PeriodicCallback):
