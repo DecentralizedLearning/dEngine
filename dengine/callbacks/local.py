@@ -96,9 +96,9 @@ class LossDumpCallback(PeriodicCallback):
             valid_out_file_array.append(np.array([validation_loss]))
         logging.info(f'Appended validation loss {round(validation_loss, 5)} at {current_time} to: {self._valid_outfile}')
 
-    def training_epoch_end(self, epoch: int, epoch_loss: float, **kwargs):
+    def training_epoch_end(self, epoch: int, training_loss: float, **kwargs):
         with NpyAppendArray(self._tr_epoch_outfile) as epoch_out_file_array:
-            epoch_out_file_array.append(np.array([epoch_loss]))
+            epoch_out_file_array.append(np.array([training_loss]))
 
 
 class ConfusionMatrixDumpBase(PeriodicCallback):
