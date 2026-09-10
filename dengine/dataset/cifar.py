@@ -84,6 +84,20 @@ def load_cifar100(
     return dataset
 
 
+_cifar10_classes = [
+    'airplane',
+    'automobile',
+    'bird',
+    'cat',
+    'deer',
+    'dog',
+    'frog',
+    'horse',
+    'ship',
+    'truck'
+]
+
+
 @register_dataset('cifar10')
 def load_cifar10(
     train: bool,

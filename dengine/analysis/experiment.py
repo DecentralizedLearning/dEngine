@@ -32,7 +32,7 @@ class Experiment:
     ):
         self.experiment_cfg = load_experiment_from_yamls(
             [experiment_root_path / "config.yaml"],
-            output_directory=experiment_root_path.parent,
+            experiments_directory_root=str(experiment_root_path.parent),
             name=experiment_root_path.name
         )
         self.initialize_config(experiment_root_path, dataset_root_path)

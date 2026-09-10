@@ -1,0 +1,3 @@
+callbacks:
+  - target: LossDumpCallback
+  - target: ConfusionMatrixDumpOnEpochEndCallback

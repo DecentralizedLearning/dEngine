@@ -393,7 +393,7 @@ class EngineWithoutEarlyStopping(TrainingEngine):
             epoch_pbar.set_postfix(epoch_pbar_postfix_dict)
 
             # 5. Finalization
-            self.callback.on_training_epoch_end(current_epoch, epoch_loss=epoch_loss)
+            self.callback.on_training_epoch_end(current_epoch, training_loss=epoch_loss)
 
         self._logging(
             f'Metrics on the last epoch: '

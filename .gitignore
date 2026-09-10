@@ -1,5 +1,6 @@
 checkpoints/
 **/datasets/*
+!configs/datasets/**
 !datasets/.gitkeep
 **/logs/*
 **/res/*

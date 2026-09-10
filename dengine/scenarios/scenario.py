@@ -51,7 +51,8 @@ class AbstractClient(ClientInterface[GenericMessage]):
         uuid: Optional[str] = None,
         verbose: bool = False,
         force_time_synchronization: bool = True,
-        debug_skip_training: bool = False
+        debug_skip_training: bool = False,
+        debug_skip_test: bool = False
     ):
         self._scenario = scenario
         self._callback = callback or DummyCallback()
@@ -83,6 +84,7 @@ class AbstractClient(ClientInterface[GenericMessage]):
         self.verbose = verbose
         self._force_time_synchronization = force_time_synchronization
         self._debug_skip_training = debug_skip_training
+        self._debug_skip_test = debug_skip_test
 
         self._msg_buffer: PriorityQueue[GenericMessage] = PriorityQueue()
 
@@ -200,6 +202,8 @@ class AbstractClient(ClientInterface[GenericMessage]):
 
     @torch.no_grad()
     def test(self, current_time: float, dataset: SupervisedDataset):
+        if self._debug_skip_test:
+            return
         self._callback.on_test_inference_start(current_time)
         output = self.local_training_engine.compute_loss_in_production(self.model, dataset)
         self._callback.on_test_inference_end(
