@@ -1,6 +1,11 @@
 from torch import nn
 from torch import Tensor
-import torchvision.models as models
+from torchvision.models import (
+    resnet18,
+    squeezenet1_1,
+    mobilenet_v3_small,
+    wide_resnet50_2, Wide_ResNet50_2_Weights
+)
 from transformers import ViTModel, ViTConfig
 
 from torch.utils.data import Subset
@@ -64,7 +69,7 @@ class ResNetClassifier(ModuleBase):
         labels = get_unique_targets(dataset)
         dataset_channels = get_image_channels(dataset)
 
-        self.backbone = models.resnet18(weights=None)
+        self.backbone = resnet18(weights=None)
 
         if dataset_channels != 3:
             self.backbone.conv1 = nn.Conv2d(
@@ -93,7 +98,7 @@ class MobileNetV3Classifier(ModuleBase):
         labels = get_unique_targets(dataset)
         dataset_channels = get_image_channels(dataset)
 
-        self.backbone = models.mobilenet_v3_small(weights=None)
+        self.backbone = mobilenet_v3_small(weights=None)
 
         if dataset_channels != 3:
             self.backbone.features[0][0] = nn.Conv2d(
@@ -125,7 +130,7 @@ class SqueezeNetClassifier(ModuleBase):
         labels = get_unique_targets(dataset)
         dataset_channels = get_image_channels(dataset)
 
-        self.backbone = models.squeezenet1_1(weights=None)
+        self.backbone = squeezenet1_1(weights=None)
 
         if dataset_channels != 3:
             self.backbone.features[0] = nn.Conv2d(
@@ -192,8 +197,8 @@ class TorchWideResNetClassifier(ModuleBase):
         labels = get_unique_targets(dataset)
         dataset_channels = get_image_channels(dataset)
 
-        self.backbone = models.wide_resnet50_2(
-            weights=models.Wide_ResNet50_2_Weights if imagenet_pretrained else None
+        self.backbone = wide_resnet50_2(
+            weights=Wide_ResNet50_2_Weights if imagenet_pretrained else None
         )
 
         if dataset_channels != 3:
