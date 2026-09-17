@@ -182,3 +182,11 @@ Issues and pull requests are welcome. Please run the test suite (`pytest tests/`
 ## License
 
 dEngine is released under the [MIT License](./LICENSE).
+
+## Citing
+As of today you can either cite one of these two papers:
+* Sabella, Samuele, et al. "[Operating Regimes of Decentralized Learning Under Mobility and Bandwidth Constraints.](https://arxiv.org/abs/2606.28342)" arXiv preprint arXiv:2606.28342 (2026).
+* Sabella, Samuele, et al. "[The Built-In Robustness of Decentralized Federated Averaging to Bad Data.](https://arxiv.org/pdf/2502.18097?)" 2025 International Joint Conference on Neural Networks (IJCNN). IEEE, 2025.
+
+> **Note**:
+> Full source code will be released soon as we finalize upcoming extensions
