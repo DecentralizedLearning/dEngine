@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Tuple, Any
 
 import networkx as nx
 import torch
@@ -6,17 +6,33 @@ from torch.nn import init
 from torch.utils.data import Subset
 
 from dengine.models.classifier import TinyCNN
-from dengine.dataset.mnist import load_mnist
+from dengine.dataset import SupervisedDataset
 from dengine.graph import Graph
 from dengine.interfaces import ScenarioEngineInterface, ModuleBase
 from dengine.scenarios.decentralized import DecAvgClient
 
 
-MOCK_VALIDATION_SUBSET = Subset(load_mnist(True, "datasets"), [100, 101, 102, 103, 104])
+class MockSupervisedDataset(SupervisedDataset):
+    def __init__(
+        self,
+        *args,
+        samples: int = 1000,
+        data_size: Tuple[int, ...] = (28, 28),
+        unique_targets: int = 10,
+        **kwargs
+    ):
+        data = torch.zeros((samples, *data_size))
+        targets = torch.randint(0, unique_targets, size=(samples, ))
+        super().__init__(data, targets, **kwargs)
+
+    def __getitem__(self, index: int) -> Tuple[Any, Any]:
+        return self.data[index], self.targets[index]
 
 
 def constant_model(c: int) -> ModuleBase:
-    model = TinyCNN(MOCK_VALIDATION_SUBSET)
+    model = TinyCNN(
+        Subset(MockSupervisedDataset(), [0, 1, 2])
+    )
 
     for p in model.parameters():
         init.constant_(p, c)
@@ -64,8 +80,8 @@ class MockClient(DecAvgClient):
             use_weighted_avg=use_weighted_avg,
             training_engine=None,
             local_model=constant_model(uuid),
-            training_data=Subset(load_mnist(True, "datasets"), range(0, uuid)),
-            validation_data=MOCK_VALIDATION_SUBSET,
+            training_data=Subset(MockSupervisedDataset(), [0, 1, 2]),
+            validation_data=Subset(MockSupervisedDataset(), [2, 3, 4]),
             force_time_synchronization=True,
             verbose=True,
         )
