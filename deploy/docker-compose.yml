@@ -1,0 +1,32 @@
+services:
+  silo:
+    image: docker.io/pgsty/silo:latest
+    container_name: silo
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # Web Console UI
+    volumes:
+      - silo-data:/data
+    env_file:
+      - .env.local
+
+  dengine-worker:
+    container_name: dengine-worker
+    restart: unless-stopped
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    ports:
+      - 8000:8000
+    env_file:
+      - .env.local
+
+volumes:
+  silo-data:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: ${VOLUMES_PATH_PREFIX:-../volumes/}silo-data
