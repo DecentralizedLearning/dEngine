@@ -3,6 +3,7 @@ checkpoints/
 !configs/datasets/**
 !datasets/.gitkeep
 **/logs/*
+volumes/
 **/res/*
 
 # Byte-compiled / optimized / DLL files
