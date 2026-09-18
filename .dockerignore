@@ -1,0 +1,51 @@
+# VCS & IDEs
+.git
+.gitignore
+.github
+.vscode
+.idea
+*.swp
+*.swo
+
+# Python artifacts & caches
+**/__pycache__
+*.py[cod]
+*$py.class
+dengine.egg-info/
+build/
+dist/
+*.egg
+.eggs/
+
+# Virtual environments & toolchains
+.venv
+venv/
+env/
+.python-version
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Local configuration, keys, & environment variables
+.env
+.env.*
+!*.env.example
+*.pem
+*.key
+
+# Model weights, datasets, & local logs (heavy files)
+*.pt
+*.pth
+*.onnx
+*.bin
+checkpoints/
+data/
+logs/
+*.log
+
+# Docker specific
+Dockerfile*
+docker-compose*.yml
+.dockerignore
