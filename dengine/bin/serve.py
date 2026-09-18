@@ -4,19 +4,20 @@ import uvicorn
 from fastapi import FastAPI
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from dengine.api import simulation, docs
+from dengine.api import simulation, docs, dependencies
 
 
 # ╔══════════════════════════════════════════════════════════╗
 # ║  Settings                                                ║
 # ╚══════════════════════════════════════════════════════════╝
 class ServerSettings(BaseSettings):
-    host: str = "0.0.0.0"
-    port: int = 8000
+    dengine_host: str = "0.0.0.0"
+    dengine_port: int = 8000
     log_level: str = "info"
     dengine_reload_on_change: bool = False
 
-    output_directory: str = "logs/"
+    dengine_output_directory: str = "logs/"
+    dengine_datasets_directory: str = "datasets/"
 
     model_config = SettingsConfigDict(
         env_file=".env.local",
@@ -32,13 +33,16 @@ settings = ServerSettings()
 # ║  Main App                                                ║
 # ╚══════════════════════════════════════════════════════════╝
 def inizialize_fastapi_app():
-    app = FastAPI()
+    app = FastAPI(lifespan=dependencies.lifespan)
     app.include_router(docs.router)
 
-    output_directory = Path(settings.output_directory)
+    output_directory = Path(settings.dengine_output_directory)
     assert output_directory.exists()
+    datasets_directory = Path(settings.dengine_datasets_directory)
+    assert datasets_directory.exists()
+
     app.include_router(
-        simulation.SimulationAPI(output_directory)._router
+        simulation.SimulationAPI(output_directory, datasets_directory)._router
     )
     return app
 
@@ -52,16 +56,16 @@ fastapi_app = inizialize_fastapi_app()
 def _main():
     if settings.dengine_reload_on_change:
         uvicorn.run(
-            "dengine.bin.serve:app",
-            host=settings.host,
-            port=settings.port,
+            "dengine.bin.serve:fastapi_app",
+            host=settings.dengine_host,
+            port=settings.dengine_port,
             log_level=settings.log_level,
             reload=True,
         )
     else:
         uvicorn.run(
             fastapi_app,
-            host=settings.host,
-            port=settings.port,
+            host=settings.dengine_host,
+            port=settings.dengine_port,
             log_level=settings.log_level,
         )
