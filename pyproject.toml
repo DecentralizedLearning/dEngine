@@ -48,5 +48,5 @@ include = ["dengine*"]
 ]
 
 [project.scripts]
-simulate = "dengine.bin.simulation:_cli"
+dengine-simulate = "dengine.bin.simulation:_cli"
 dengine-serve = "dengine.bin.serve:_main"
