@@ -25,8 +25,17 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-full = [
+dev = [
     "Mako"
+]
+serve = [
+    "fastapi",
+    "uvicorn",
+    "pydantic",
+    "pydantic-settings"
+]
+full = [
+    "dengine[dev,serve]"
 ]
 
 [tool.setuptools.packages.find]
@@ -40,3 +49,4 @@ include = ["dengine*"]
 
 [project.scripts]
 simulate = "dengine.bin.simulation:_cli"
+dengine-serve = "dengine.bin.serve:_main"
