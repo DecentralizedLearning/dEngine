@@ -1,5 +1,5 @@
 # Event API
-For more info see [`../../dengine/scenarios/event_api/`](events_api).
+For more info see [`events_api`](../../dengine/scenarios/event_api/).
 
 ## Setup
 
