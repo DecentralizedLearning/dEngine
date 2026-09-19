@@ -102,7 +102,7 @@ class SyncEngine(ScenarioEventEngine[GenericClient]):
     ) -> GenericClient:
         return self.clients[uuids]
 
-    def get_all_clients(self):
+    def get_all_clients(self) -> Sequence[GenericClient]:
         return list(self.clients.values())
 
     def get_many_clients(

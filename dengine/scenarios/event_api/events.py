@@ -59,6 +59,10 @@ class StartEvent(Event):
     tag: Literal["START"] = "START"
 
 
+class EndEvent(Event):
+    tag: Literal["END"] = "END"
+
+
 class Synchronization(Event):
     src: str
     destinations: Sequence[str] | None

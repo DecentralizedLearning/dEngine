@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import datetime
 from typing import Optional, Sequence, Dict, Literal
 from abc import abstractmethod, ABC
@@ -66,3 +68,8 @@ class DynamicGraph(Graph, ABC):
         if time_end and time_end.timestamp() < contact_time_end:
             return time_end
         return datetime.fromtimestamp(contact_time_end)
+
+
+class DistributedGraph(Graph, ABC):
+    def merge(self, graph: DistributedGraph) -> DistributedGraph:
+        raise NotImplementedError()

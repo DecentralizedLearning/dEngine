@@ -1,0 +1,69 @@
+{
+  "EXPERIMENT_VERSION": "1",
+  "target": null,
+  "experiments_directory_root": "MNIST",
+  "name": "Mnist,Centralized,TinyCNN",
+  "seed": 123,
+  "dataset": {
+    "train": {
+      "target": "mnist",
+      "arguments": {
+        "train": true
+      }
+    },
+    "test": {
+      "target": "mnist",
+      "arguments": {
+        "train": false
+      }
+    },
+    "postprocessing": null
+  },
+  "partitioning": {
+    "target": "random_iid_balanced",
+    "arguments": {
+      "validation_percentage": 0.02
+    }
+  },
+  "graph": {
+    "target": "DistributedNXGraph",
+    "arguments": {
+      "nx_class": "complete_graph",
+      "n": 1
+    }
+  },
+  "scenario": {
+    "target": "VanillaDecentralizedSynch",
+    "arguments": {
+      "common_init": true,
+      "max_communication_rounds": 200
+    }
+  },
+  "client": {
+    "target": "DecAvgClient",
+    "arguments": {
+      "include_myself": true,
+      "use_weighted_avg": true
+    },
+    "training_engine": {
+      "target": "TrainingEngine",
+      "arguments": {
+        "optimizer": "Adam",
+        "epochs": 5,
+        "lr": 0.0003,
+        "sgd_momentum": 0.9,
+        "training_batch_size": 32,
+        "validation_batch_size": 32,
+        "adam_weight_decay": 0.001,
+        "scheduler": "cosine",
+        "patience": 5
+      }
+    },
+    "local_model": {
+      "target": "TinyCNN",
+      "arguments": null
+    }
+  },
+  "callbacks": [
+  ]
+}

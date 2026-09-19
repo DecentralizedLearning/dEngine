@@ -172,7 +172,10 @@ class ScenarioEventEngine(AbstractScenarioEngine[GenericClient]):
 
                 assert next_event.timestamp >= self.timestamp
                 self.timestamp = next_event.timestamp
-                if next_event.timestamp.timestamp() >= self._max_communication_rounds:
+                if (
+                    (next_event.timestamp.timestamp() >= self._max_communication_rounds)
+                    or (isinstance(next_event, e.EndEvent))
+                ):
                     break
                 self._consume_event_with_handlers(next_event)
 
