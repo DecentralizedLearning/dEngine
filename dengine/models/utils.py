@@ -17,7 +17,7 @@ from dengine.interfaces import ClientInterface
 def load_last_checkpoint(clients: Sequence[ClientInterface], checkpoint_dir: Path):
     logging.info(f"Trying to reload checkpoint {constants.LAST_CHECKPOINT_FILENAME} from {checkpoint_dir}")
     for c in clients:
-        title = f"[Paiv-{c.UUID}]"
+        title = f"[Client-{c.UUID}]"
         last_checkpoint_fpath = checkpoint_dir / f"{c.UUID}/{constants.LAST_CHECKPOINT_FILENAME}"
         if not last_checkpoint_fpath.exists():
             logging.warning(
