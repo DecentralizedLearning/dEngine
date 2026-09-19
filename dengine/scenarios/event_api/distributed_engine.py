@@ -17,7 +17,7 @@ from dengine.interfaces import (
 from dengine.partitioning import TYPE_DATASET_PARTITIONING
 from dengine.scenarios.event_api.events import Event
 
-from .remote_engine import RemoteEngine
+from .remote_engine import RemoteEngine, RemoteClient
 from .sync_engine import SyncEngine
 
 
@@ -101,3 +101,11 @@ class DistributedEngine(SyncEngine[GenericClient]):
                 r_engine.get_all_clients()
             )
         return [*local_clients, *remote_clients]
+
+
+def get_local_clients(engine: SyncEngine):
+    return [c for c in engine.get_all_clients() if not isinstance(c, RemoteClient)]
+
+
+def get_remote_clients(engine: SyncEngine):
+    return [c for c in engine.get_all_clients() if isinstance(c, RemoteClient)]
