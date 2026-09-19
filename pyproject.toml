@@ -32,7 +32,8 @@ serve = [
     "fastapi",
     "uvicorn",
     "pydantic",
-    "pydantic-settings"
+    "pydantic-settings",
+    "pyjwt"
 ]
 full = [
     "dengine[dev,serve]"

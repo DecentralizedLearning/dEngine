@@ -9,6 +9,7 @@ from dengine.scenarios.event_api.distributed_engine import DistributedEngine
 from dengine.scenarios.event_api.remote_engine import RemoteClient
 from dengine.interfaces import ClientInterface
 from dengine.scenarios.event_api.sync_engine import get_all_clients
+from dengine.scenarios.event_api.distributed_engine import get_remote_clients, get_local_clients
 
 
 def _get_peers_from_env() -> List[str]:
@@ -18,10 +19,27 @@ def _get_peers_from_env() -> List[str]:
     return [url.strip() for url in raw_val.split(",") if url.strip()]
 
 
+def format_params(state_dict) -> str:
+    total = sum(t.numel() for t in state_dict.values())
+
+    if total >= 1e9:
+        readable = f"{total / 1e9:.2f}B"
+    elif total >= 1e6:
+        readable = f"{total / 1e6:.2f}M"
+    elif total >= 1e3:
+        readable = f"{total / 1e3:.2f}K"
+    else:
+        readable = str(total)
+
+    return f"{readable} ({total:,})"
+
+
 def format_client(client: ClientInterface) -> str:
     is_remote = isinstance(client, RemoteClient)
     client_kind = "remote" if is_remote else "local"
-    return f"{client.UUID} ({client_kind})"
+
+    params_str = format_params(client.model.state_dict())
+    return f"{client.UUID} ({client_kind}) | {params_str} params"
 
 
 def create_engine() -> DistributedEngine[DecAvgClient]:
@@ -48,42 +66,35 @@ def create_engine() -> DistributedEngine[DecAvgClient]:
     @engine.start()
     def handle_engine_start(
         event: Event,
-        clients: Sequence[DecAvgClient] = Depends(get_all_clients),
+        clients: Sequence[ClientInterface] = Depends(get_all_clients),
     ):
         """Initializes dependencies and starts the simulation run."""
         print(f"[{engine.timestamp}] Initialized dEngine with {len(clients)} client(s).")
-        details = ", ".join(format_client(c) for c in clients)
+        details = ", \n".join(format_client(c) for c in clients)
         print(details)
 
-    @engine.user_event(tag="say_hello")
+    @engine.user_event(tag="hello")
     def handle_hello(
         event: Event,
-        clients: Sequence[DecAvgClient] = Depends(get_all_clients),
+        clients: Sequence[ClientInterface] = Depends(get_all_clients),
+        remote_clients: Sequence[RemoteClient] = Depends(get_remote_clients),
+        local_clients: Sequence[DecAvgClient] = Depends(get_local_clients)
     ):
-        """Processes one-off diagnostic or handshake events."""
         print(f"[{engine.timestamp}] Initialized dEngine with {len(clients)} client(s).")
-        details = ", ".join(format_client(c) for c in clients)
+        details = ", \n".join(format_client(c) for c in clients)
         print(details)
 
     def _schedule_wall_clock_tick(delay_seconds: float = 5.0):
-        """Paces event injection against physical wall-clock time."""
         time.sleep(delay_seconds)
-        # Injects the event using the engine's current simulation timestamp at wakeup
         engine.add_events(Event(timestamp=engine.timestamp, tag="slow loop"))
 
-    @engine.user_event(tag="slow loop")
+    @engine.user_event(tag="loop")
     def handle_slow_loop(event: Event):
-        """Demonstrates physical pacing by offloading delays to a background daemon thread.
-
-        Because the engine's internal clock does not track real-world seconds,
-        a daemon worker thread sleeps in real time before enqueuing the next event.
-        """
         print(f"[{engine.timestamp}] Received wall-clock event; arming background delay...")
         threading.Thread(
             target=_schedule_wall_clock_tick,
             args=(5.0,),
             daemon=True,
-            name="WallClockPacerThread",
         ).start()
 
     return engine

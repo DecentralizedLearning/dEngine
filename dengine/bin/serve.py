@@ -16,6 +16,8 @@ class ServerSettings(BaseSettings):
     log_level: str = "info"
     dengine_reload_on_change: bool = False
 
+    dengine_api_base_url: str = "http://localhost:8000"
+    dengine_jwt_secret: str = "password"
     dengine_output_directory: str = "logs/"
     dengine_datasets_directory: str = "datasets/"
 
@@ -42,7 +44,12 @@ def inizialize_fastapi_app():
     assert datasets_directory.exists()
 
     app.include_router(
-        simulation.SimulationAPI(output_directory, datasets_directory)._router
+        simulation.SimulationAPI(
+            output_directory=output_directory,
+            datasets_directory=datasets_directory,
+            api_base_url=settings.dengine_api_base_url,
+            jwt_secret=settings.dengine_jwt_secret,
+        )._router
     )
     return app
 
