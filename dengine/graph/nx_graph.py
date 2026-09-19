@@ -1,13 +1,16 @@
+from __future__ import annotations
+
 import logging
 from typing import Optional
 from pathlib import Path
+from uuid import uuid4
 
 import networkx as nx
 import matplotlib.pyplot as plt
 
 from dengine.config import ExperimentConfiguration
 
-from .graph import Graph
+from .graph import Graph, DistributedGraph
 from .decorators import register_graph
 
 
@@ -118,3 +121,17 @@ class NXGraph(Graph):
     def neighbors(self, source):
         source = int(source)
         return [str(n) for n in self.nx_graph.neighbors(source)]
+
+
+@register_graph()
+class DistributedNXGraph(NXGraph, DistributedGraph):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        mapping = {node: str(uuid4()) for node in self.nx_graph.nodes()}
+        nx.relabel_nodes(self.nx_graph, mapping, copy=False)
+
+    def merge(self, graph_b: NXGraph) -> NXGraph:
+        if not isinstance(graph_b, NXGraph):
+            raise ValueError("Merge is supported only between DistributedNXGraph")
+        merged_nx = nx.compose(self.nx_graph, graph_b.nx_graph)
+        return NXGraph(experiment_cfg=self._experiment_cfg, graph=merged_nx)
