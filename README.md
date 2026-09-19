@@ -39,12 +39,7 @@ This installs the `dengine` package along with its dependencies (PyTorch, torchv
 
 ## Quick start
 
-The [`examples/`](./examples) directory contains runnable projects. The simplest is `examples/HelloWorld`, which trains a small CNN on MNIST over a Barabási–Albert graph using decentralized averaging.
-
-```bash
-cd examples/HelloWorld
-python main.py --config config.yml --output_directory debug
-```
+The [`examples/`](./examples) directory contains runnable projects. The simplest is `examples/MNIST`, which trains a small CNN on MNIST over a Barabási–Albert graph using decentralized averaging.
 
 A minimal experiment config looks like this:
 
@@ -125,10 +120,10 @@ run_simulation(args, cfg)
 Once installed, dEngine also exposes a console entry point:
 
 ```bash
-simulate --config <your_config.yml> --gpu 0 --output_directory logs/
+dengine-simulate --config <your_config.yml> --gpu 0 --output_directory logs/
 ```
 
-Run `simulate --help` (or `python main.py --help` from an example) to see all CLI options, including `--sanity_check` to validate a config without running it, `--seed`, `--dataset_directory`, and `--resume_checkpoints`.
+Run `dengine-simulate --help` (or `python main.py --help` from an example) to see all CLI options, including `--sanity_check` to validate a config without running it, `--seed`, `--dataset_directory`, and `--resume_checkpoints`.
 
 More examples:
 
@@ -136,6 +131,7 @@ More examples:
 - [`examples/HelloWorld`](./examples/HelloWorld): implements a complex use case involving advanced customization.
 - [`examples/Scaffold`](./examples/Scaffold): the SCAFFOLD federated optimization algorithm.
 - [`examples/GAN`](./examples/GAN): decentralized training of a generative model.
+- [`examples/events`](./examples/events/): advanced events API and distributed runtime
 
 ## Project structure
 
