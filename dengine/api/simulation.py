@@ -65,6 +65,9 @@ class SimulationAPI:
             sanity_check=True,
             seed=123
         )
+        config.experiments_directory_root = str(
+            (self._output_directory / config.experiments_directory_root).absolute()
+        )
         load_engine(args, config, engine)
         return {"status": "success"}
 
@@ -73,4 +76,9 @@ class SimulationAPI:
         engine: DistributedEngine[GenericClient] = Depends(get_engine)
     ) -> List[ClientListSchema]:
         clients = engine.get_all_clients()
-        return [ClientListSchema.model_validate(c.UUID) for c in clients]
+        return [
+            ClientListSchema.model_validate({
+                "UUID": c.UUID
+            })
+            for c in clients
+        ]
