@@ -16,6 +16,7 @@ from dengine.config import ExperimentConfiguration
 from dengine.config.utils import convert_to_nested_dict
 from dengine import load_experiment_from_yamls
 from dengine.bin.simulation import load_engine
+from dengine.models.classifier import CNNMnist, WideResNetClassifier
 from dengine.scenarios.decentralized import DecAvgClient
 from dengine.scenarios.centralized import CentralizedClient
 
@@ -27,67 +28,69 @@ FEDERATED_CONFIGS = [
     BUILTINS.CORE.SCENARIOS.DECENTRALIZED_HOMOGENOUS,
     BUILTINS.CORE.GRAPH.STAR_51,
     BUILTINS.CORE.DATASETS.MNIST,
+    BUILTINS.CORE.PARTITIONING.IID,
     Path("configs/core.yml")
 ]
 DECENTRALIZED_BA_CONFIGS = [
     BUILTINS.CORE.SCENARIOS.DECENTRALIZED_HOMOGENOUS,
     BUILTINS.CORE.GRAPH.BA_MEDIUM,
     BUILTINS.CORE.DATASETS.MNIST,
+    BUILTINS.CORE.PARTITIONING.IID,
     Path("configs/core.yml")
 ]
 DECENTRALIZED_ER_CONFIGS = [
     BUILTINS.CORE.SCENARIOS.DECENTRALIZED_HOMOGENOUS,
     BUILTINS.CORE.GRAPH.ER_MEDIUM,
     BUILTINS.CORE.DATASETS.MNIST,
+    BUILTINS.CORE.PARTITIONING.IID,
     Path("configs/core.yml")
 ]
 CENTRALIZED_CONFIGS = [
     BUILTINS.CORE.GRAPH.CENTRALIZED,
     BUILTINS.CORE.SCENARIOS.CENTRALIZED,
     BUILTINS.CORE.DATASETS.MNIST,
+    BUILTINS.CORE.PARTITIONING.IID,
     Path("configs/core.yml"),
     Path("configs/centralized_callbacks.yml")
 ]
 
 CENTRALIZED_CONFIG_OVERRIDES = {
-    "client.target": CentralizedClient.__name__,
-    "client.training_engine.arguments.epochs": 1500,
+    # "client.target": CentralizedClient.__name__,
+    # "client.training_engine.arguments.epochs": 1500,
 }
 DECENTRALIZED_CONFIG_OVERRIDES = {
-    "client.target": DecAvgClient.__name__,
-    # Aggregation and Scenario
-    "scenario.arguments.common_init": True,
-    "client.arguments.include_myself": True,
-    "client.arguments.use_weighted_avg": True,
-    "scenario.arguments.max_communication_rounds": 200,
-    # Training Engine
-    "client.training_engine.arguments.optimizer": "Adam",
-    "client.training_engine.arguments.lr": 0.0003,
-    "client.training_engine.arguments.adam_weight_decay": 0.001,
-    "client.training_engine.arguments.scheduler": "cosine",
-    "client.training_engine.arguments.patience": 5,
-    "client.training_engine.arguments.epochs": 5,
-    "client.training_engine.arguments.validation_batch_size": 32,
-    "client.training_engine.arguments.training_batch_size": 32,
-    "partitioning.arguments.validation_percentage": 0.1,
+    # "client.target": DecAvgClient.__name__,
+    # Aggregation and Scenario ..... ..... #
+    # "scenario.arguments.common_init": True,
+    # "client.arguments.include_myself": True,
+    # "client.arguments.use_weighted_avg": True,
+    # "scenario.arguments.max_communication_rounds": 200,
+    # Training Engine ..... ..... #
+    # "client.training_engine.arguments.optimizer": "Adam",
+    # "client.training_engine.arguments.lr": 0.0003,
+    # "client.training_engine.arguments.adam_weight_decay": 0.001,
+    # "client.training_engine.arguments.scheduler": "cosine",
+    # "client.training_engine.arguments.patience": 5,
+    # "client.training_engine.arguments.epochs": 5,
+    # "client.training_engine.arguments.validation_batch_size": 32,
+    # "client.training_engine.arguments.training_batch_size": 32,
+    # "partitioning.arguments.validation_percentage": 0.1,
 }
 
 
 # ..... ..... ..... ..... ..... ..... ..... ..... #
 # ARCHITECTURE
 # ..... ..... ..... ..... ..... ..... ..... ..... #
-TINY_CNN = {"client.local_model.target": "TinyCNN"}
-MOBILE_VNET = {"client.local_model.target": "MobileNetV3Classifier"}
+CNN_MNIST = {"client.local_model.target": CNNMnist.__name__}
 WIDE_RESNET = {
-    "client.local_model.target": "WideResNetClassifier",
+    "client.local_model.target": WideResNetClassifier.__name__,
     "client.local_model.arguments.depth": 10,
     "client.local_model.arguments.dropout": 0.3,
     "client.local_model.arguments.widen_factor": 5,
 }
-VIT = {"client.local_model.target": "ViT"}
 
 
-def load_centralized_cifar10(
+def load_centralized_mnist(
     simulation_args: SimulationArguments,
     architecture,
     debug: bool = False
@@ -101,7 +104,7 @@ def load_centralized_cifar10(
         load_experiment_from_yamls(
             files=[*CENTRALIZED_CONFIGS],
             overrides=convert_to_nested_dict({
-                "name": f"cifar10,Centralized,{model_name}",
+                "name": f"mnist,Centralized,{model_name}",
                 **CENTRALIZED_CONFIG_OVERRIDES,
                 **debug_argument,
                 **architecture,
@@ -112,7 +115,7 @@ def load_centralized_cifar10(
     ]
 
 
-def load_cifar10_decentralized(
+def load_mnist_decentralized(
     simulation_args: SimulationArguments,
     config_overrides,
     architecture,
@@ -128,7 +131,7 @@ def load_cifar10_decentralized(
         load_experiment_from_yamls(
             files=[*DECENTRALIZED_BA_CONFIGS],
             overrides=convert_to_nested_dict({
-                "name": f"cifar10,BA,DecAvg,{model_name}",
+                "name": f"mnist,BA,DecAvg,{model_name}",
                 "graph.arguments.seed": simulation_args.seed,
                 **config_overrides,
                 **architecture,
@@ -140,7 +143,7 @@ def load_cifar10_decentralized(
         load_experiment_from_yamls(
             files=[*DECENTRALIZED_ER_CONFIGS],
             overrides=convert_to_nested_dict({
-                "name": f"cifar10,ER,DecAvg,{model_name}",
+                "name": f"mnist,ER,DecAvg,{model_name}",
                 "graph.arguments.seed": simulation_args.seed,
                 **config_overrides,
                 **architecture,
@@ -152,7 +155,7 @@ def load_cifar10_decentralized(
         load_experiment_from_yamls(
             files=[*FEDERATED_CONFIGS],
             overrides=convert_to_nested_dict({
-                "name": f"cifar10,FedAvg,{model_name}",
+                "name": f"mnist,FedAvg,{model_name}",
                 **config_overrides,
                 **architecture,
                 **debug_argument
@@ -207,10 +210,10 @@ def main():
 
     configurations = []
     try:
-        for architecture_cfg in [TINY_CNN, MOBILE_VNET, WIDE_RESNET, VIT]:
+        for architecture_cfg in [CNN_MNIST, WIDE_RESNET]:
             configurations += [
-                *load_centralized_cifar10(simulation_args, architecture=architecture_cfg, debug=extra_arguments.debug),
-                *load_cifar10_decentralized(simulation_args, debug=extra_arguments.debug, architecture=architecture_cfg, config_overrides=DECENTRALIZED_CONFIG_OVERRIDES),
+                *load_centralized_mnist(simulation_args, architecture=architecture_cfg, debug=extra_arguments.debug),
+                *load_mnist_decentralized(simulation_args, debug=extra_arguments.debug, architecture=architecture_cfg, config_overrides=DECENTRALIZED_CONFIG_OVERRIDES),
             ]
     except ValidationError as e:
         print("\n❌ Failed to parse the configuration due to the following validation errors: ")

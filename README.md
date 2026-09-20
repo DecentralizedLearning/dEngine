@@ -171,10 +171,6 @@ dEngine ships with ready-to-use configs under [`configs/core`](./configs/core), 
 - [`dengine-uciml`](https://github.com/DecentralizedLearning/dengine-uciml) — extends dEngine with support for the UCI Machine Learning datasets.
 - [`notebooks`](https://github.com/DecentralizedLearning/notebooks) — notebooks for visualizing and analyzing dEngine experiment results.
 
-## Contributing
-
-Issues and pull requests are welcome. Please run the test suite (`pytest tests/`) and check code style with `pylint` (see `.pylintrc`) before submitting changes.
-
 ## License
 
 dEngine is released under the [MIT License](./LICENSE).
