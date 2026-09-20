@@ -32,16 +32,18 @@ http://localhost:8000/docs
 
 ## Configuration
 
-The server can be configured through environment variables:
+The server can be configured through environment variables (or via an env file called `.env.local`):
 
-| Environment variable       | Default             | Description                                        |
-| -------------------------- | ------------------- | -------------------------------------------------- |
-| `HOST`                     | `0.0.0.0`           | Host address the server binds to.                  |
-| `PORT`                     | `8000`              | Port the server listens on.                        |
-| `DENGINE_RELOAD_ON_CHANGE` | `false`             | Reload the server when source files change.        |
-| `OUTPUT_DIRECTORY`         | `logs/`             | Directory where server output and logs are stored. |
-| `DATASETS_DIRECTORY`       | `datasets/`         | Directory used for datasets.                       |
-| `DENGINE_ENGINE_FACTORY`   | `DistributedEngine` | Import path of the engine factory to use.          |
+| Environment Variable | Default | Description |
+| --- | --- | --- |
+| `HOST` | `0.0.0.0` | Host address the server binds to. |
+| `PORT` | `8000` | Port the server listens on. |
+| `DENGINE_RELOAD_ON_CHANGE` | `false` | Reload the server when source files change. |
+| `OUTPUT_DIRECTORY` | `logs/` | Directory where server output and logs are stored. |
+| `DATASETS_DIRECTORY` | `datasets/` | Directory used for datasets. |
+| `DENGINE_ENGINE_FACTORY` | `DistributedEngine` | Import path of the engine factory to use. |
+| `DENGINE_API_BASE_URL` | `http://localhost:8000` | Base URL used to redirect model download presigned URLs. |
+| `DENGINE_JWT_SECRET` | `password` | Secret key used to sign presigned JWT download URLs. |
 
 ## Adding a Client
 
