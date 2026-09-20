@@ -17,8 +17,8 @@ from dengine.config.utils import convert_to_nested_dict
 from dengine import load_experiment_from_yamls
 from dengine.bin.simulation import load_engine
 from dengine.models.classifier import CNNMnist, WideResNetClassifier
-from dengine.scenarios.decentralized import DecAvgClient
-from dengine.scenarios.centralized import CentralizedClient
+# from dengine.scenarios.decentralized import DecAvgClient
+# from dengine.scenarios.centralized import CentralizedClient
 
 
 # ..... ..... ..... ..... ..... ..... ..... ..... #
