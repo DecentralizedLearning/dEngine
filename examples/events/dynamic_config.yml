@@ -1,0 +1,40 @@
+seed: 123
+
+scenario:
+  target: ScenarioPlaceholder
+  arguments:
+    max_communication_rounds: 2000  # Simulation will stop after 2k virtual seconds
+
+client:
+  target: DecAvgClient
+  arguments:
+    use_weighted_avg: True
+    include_myself: True
+  training_engine:
+    target: TrainingEngine
+    arguments:
+      epochs: 15
+      lr: 0.05
+      optimizer: SGD
+      patience: 30
+      sgd_momentum: 0.9
+      training_batch_size: 128
+      validation_batch_size: 128
+  local_model:
+    target: TinyCNN
+
+partitioning:
+  arguments:
+    minimum_training_samples_per_class: 8
+    validation_percentage: 0.02
+    zipf_alpha: 3.5
+  target: zipf_noniid_truncated
+
+callbacks:
+  - target: ConfusionMatrixDumpOnTestInferenceEnd
+
+graph:
+  arguments:
+    n: 10
+    nx_class: complete_graph
+  target: NXGraph

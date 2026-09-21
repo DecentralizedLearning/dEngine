@@ -59,10 +59,6 @@ def create_engine() -> DistributedEngine[DecAvgClient]:
         raise_for_unknown_event=False,
     )
 
-    # -------------------------------------------------------------------------
-    # Lifecycle & Basic Events
-    # -------------------------------------------------------------------------
-
     @engine.start()
     def handle_engine_start(
         event: Event,
