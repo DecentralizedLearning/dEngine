@@ -1,7 +1,16 @@
 # Event API
 For more info see [`events_api`](../../dengine/scenarios/event_api/).
 
-## Setup
+# Standalone Simulation Script
+If you do not need HTTP orchestration or REST APIs, run experiments directly from the command line using SyncEngine. `main.py` loads dataset profiles and experiment configurations via YAML files without starting an HTTP daemon.
+
+---
+
+## HTTP / Multi-Node Distributed Service
+
+Run the simulation as an HTTP daemon capable of binding to network interfaces, accepting events via REST endpoints, and interconnecting multiple engines across nodes.
+
+### Setup
 
 Create the required directories:
 
@@ -30,7 +39,7 @@ Interactive API documentation is available at:
 
 http://localhost:8000/docs
 
-## Configuration
+### Configuration
 
 The server can be configured through environment variables (or via an env file called `.env.local`):
 
@@ -45,7 +54,7 @@ The server can be configured through environment variables (or via an env file c
 | `DENGINE_API_BASE_URL` | `http://localhost:8000` | Base URL used to redirect model download presigned URLs. |
 | `DENGINE_JWT_SECRET` | `password` | Secret key used to sign presigned JWT download URLs. |
 
-## Adding a Client
+### Adding a Client
 
 To add a client, send its configuration to the `/simulation/load` endpoint:
 
@@ -57,7 +66,7 @@ curl -X POST 'http://localhost:8000/simulation/load' \
 
 The `config.json` file should contain the configuration required to load the client.
 
-## Running a Connected Engine
+### Running a Connected Engine
 
 You can run another engine that connects to and has access to the first engine.
 
@@ -90,7 +99,7 @@ while the connected engine is available at:
 http://localhost:8001
 ```
 
-## Sending Events
+### Sending Events
 
 Make sure the custom runtime is running before sending events.
 
