@@ -70,6 +70,8 @@ class BUILTINS:
             ER_SMALL = get_config('er_small.yml', 'configs/core/graph/er_small.yml')
             STAR = get_config('star.yml', 'configs/core/graph/star.yml')
             STAR_51 = get_config('star_51.yml', 'configs/core/graph/star_51.yml')
+            STAR_MEDIUM = get_config('star_medium.yml', 'configs/core/graph/star_medium.yml')
+            STAR_SMALL = get_config('star_small.yml', 'configs/core/graph/star_small.yml')
 
         class PARTITIONING:
             IID = get_config('iid.yml', 'configs/core/partitioning/iid.yml')
