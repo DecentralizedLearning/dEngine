@@ -40,6 +40,10 @@ def get_config(name: str, default_path: str = ""):
     if target.exists():
         return target
 
+    target = Path(sys.prefix) / f'local/share/dengine/configs/{name}'
+    if target.exists():
+        return target
+
     root_path = Path(dengine.__file__).parent.parent
     return root_path / default_path
 
@@ -60,7 +64,7 @@ class BUILTINS:
         class GRAPH:
             BA_MEDIUM = get_config('ba_medium.yml', 'configs/core/graph/ba_medium.yml')
             BA_SMALL = get_config('ba_small.yml', 'configs/core/graph/ba_small.yml')
-            CENTRALIZED = get_config('centralized.yml', 'configs/core/graph/centralized.yml')
+            CENTRALIZED_GRAPH = get_config('centralized_graph.yml', 'configs/core/graph/centralized_graph.yml')
             COMPLETE_GRAPH_MEDIUM = get_config('complete_graph_medium.yml', 'configs/core/graph/complete_graph_medium.yml')
             ER_MEDIUM = get_config('er_medium.yml', 'configs/core/graph/er_medium.yml')
             ER_SMALL = get_config('er_small.yml', 'configs/core/graph/er_small.yml')
