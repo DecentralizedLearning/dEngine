@@ -6,7 +6,7 @@ import copy
 import json
 import logging
 
-from tqdm import tqdm
+from tqdm.auto import tqdm
 import numpy as np
 import torch
 from dataclasses import dataclass

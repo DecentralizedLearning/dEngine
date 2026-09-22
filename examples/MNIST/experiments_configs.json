@@ -4,7 +4,7 @@
     "target": null,
     "experiments_directory_root": "/home/samuele.sabella/Desktop/DecentralizedLearning/dEngine/examples/MNIST/logs",
     "name": "mnist,Centralized,CNNMnist",
-    "seed": 13187,
+    "seed": 123,
     "dataset": {
       "train": {
         "target": "mnist",
@@ -72,7 +72,7 @@
     "target": null,
     "experiments_directory_root": "/home/samuele.sabella/Desktop/DecentralizedLearning/dEngine/examples/MNIST/logs",
     "name": "mnist,BA,DecAvg,CNNMnist",
-    "seed": 13187,
+    "seed": 123,
     "dataset": {
       "train": {
         "target": "mnist",
@@ -100,7 +100,7 @@
         "nx_class": "barabasi_albert_graph",
         "n": 50,
         "m": 1,
-        "seed": 13187
+        "seed": 123
       }
     },
     "scenario": {
@@ -111,8 +111,11 @@
       }
     },
     "client": {
-      "target": "CentralizedClient",
-      "arguments": null,
+      "target": "DecAvgClient",
+      "arguments": {
+        "include_myself": true,
+        "use_weighted_avg": true
+      },
       "training_engine": {
         "target": "TrainingEngine",
         "arguments": {
@@ -149,7 +152,7 @@
     "target": null,
     "experiments_directory_root": "/home/samuele.sabella/Desktop/DecentralizedLearning/dEngine/examples/MNIST/logs",
     "name": "mnist,ER,DecAvg,CNNMnist",
-    "seed": 13187,
+    "seed": 123,
     "dataset": {
       "train": {
         "target": "mnist",
@@ -177,7 +180,7 @@
         "nx_class": "erdos_renyi_graph",
         "n": 50,
         "p": 0.2,
-        "seed": 13187
+        "seed": 123
       }
     },
     "scenario": {
@@ -188,8 +191,11 @@
       }
     },
     "client": {
-      "target": "CentralizedClient",
-      "arguments": null,
+      "target": "DecAvgClient",
+      "arguments": {
+        "include_myself": true,
+        "use_weighted_avg": true
+      },
       "training_engine": {
         "target": "TrainingEngine",
         "arguments": {
@@ -226,7 +232,7 @@
     "target": null,
     "experiments_directory_root": "/home/samuele.sabella/Desktop/DecentralizedLearning/dEngine/examples/MNIST/logs",
     "name": "mnist,FedAvg,CNNMnist",
-    "seed": 13187,
+    "seed": 123,
     "dataset": {
       "train": {
         "target": "mnist",
@@ -252,19 +258,23 @@
       "target": "NXGraph",
       "arguments": {
         "nx_class": "star_graph",
-        "n": 51
+        "n": 50
       }
     },
     "scenario": {
-      "target": "VanillaDecentralizedSynch",
+      "target": "VanillaFederatedScenario",
       "arguments": {
-        "common_init": true,
-        "max_communication_rounds": 200
+        "max_communication_rounds": 20,
+        "use_weighted_avg": true,
+        "common_init": true
       }
     },
     "client": {
-      "target": "CentralizedClient",
-      "arguments": null,
+      "target": "FederatedClient",
+      "arguments": {
+        "include_myself": true,
+        "use_weighted_avg": true
+      },
       "training_engine": {
         "target": "TrainingEngine",
         "arguments": {
@@ -301,7 +311,7 @@
     "target": null,
     "experiments_directory_root": "/home/samuele.sabella/Desktop/DecentralizedLearning/dEngine/examples/MNIST/logs",
     "name": "mnist,Centralized,WideResNetClassifier",
-    "seed": 13187,
+    "seed": 123,
     "dataset": {
       "train": {
         "target": "mnist",
@@ -373,7 +383,7 @@
     "target": null,
     "experiments_directory_root": "/home/samuele.sabella/Desktop/DecentralizedLearning/dEngine/examples/MNIST/logs",
     "name": "mnist,BA,DecAvg,WideResNetClassifier",
-    "seed": 13187,
+    "seed": 123,
     "dataset": {
       "train": {
         "target": "mnist",
@@ -401,7 +411,7 @@
         "nx_class": "barabasi_albert_graph",
         "n": 50,
         "m": 1,
-        "seed": 13187
+        "seed": 123
       }
     },
     "scenario": {
@@ -412,8 +422,11 @@
       }
     },
     "client": {
-      "target": "CentralizedClient",
-      "arguments": null,
+      "target": "DecAvgClient",
+      "arguments": {
+        "include_myself": true,
+        "use_weighted_avg": true
+      },
       "training_engine": {
         "target": "TrainingEngine",
         "arguments": {
@@ -454,7 +467,7 @@
     "target": null,
     "experiments_directory_root": "/home/samuele.sabella/Desktop/DecentralizedLearning/dEngine/examples/MNIST/logs",
     "name": "mnist,ER,DecAvg,WideResNetClassifier",
-    "seed": 13187,
+    "seed": 123,
     "dataset": {
       "train": {
         "target": "mnist",
@@ -482,7 +495,7 @@
         "nx_class": "erdos_renyi_graph",
         "n": 50,
         "p": 0.2,
-        "seed": 13187
+        "seed": 123
       }
     },
     "scenario": {
@@ -493,8 +506,11 @@
       }
     },
     "client": {
-      "target": "CentralizedClient",
-      "arguments": null,
+      "target": "DecAvgClient",
+      "arguments": {
+        "include_myself": true,
+        "use_weighted_avg": true
+      },
       "training_engine": {
         "target": "TrainingEngine",
         "arguments": {
@@ -535,7 +551,7 @@
     "target": null,
     "experiments_directory_root": "/home/samuele.sabella/Desktop/DecentralizedLearning/dEngine/examples/MNIST/logs",
     "name": "mnist,FedAvg,WideResNetClassifier",
-    "seed": 13187,
+    "seed": 123,
     "dataset": {
       "train": {
         "target": "mnist",
@@ -561,19 +577,23 @@
       "target": "NXGraph",
       "arguments": {
         "nx_class": "star_graph",
-        "n": 51
+        "n": 50
       }
     },
     "scenario": {
-      "target": "VanillaDecentralizedSynch",
+      "target": "VanillaFederatedScenario",
       "arguments": {
-        "common_init": true,
-        "max_communication_rounds": 200
+        "max_communication_rounds": 20,
+        "use_weighted_avg": true,
+        "common_init": true
       }
     },
     "client": {
-      "target": "CentralizedClient",
-      "arguments": null,
+      "target": "FederatedClient",
+      "arguments": {
+        "include_myself": true,
+        "use_weighted_avg": true
+      },
       "training_engine": {
         "target": "TrainingEngine",
         "arguments": {

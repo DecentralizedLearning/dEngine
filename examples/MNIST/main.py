@@ -17,7 +17,8 @@ from dengine.config.utils import convert_to_nested_dict
 from dengine import load_experiment_from_yamls
 from dengine.bin.simulation import load_engine
 from dengine.models.classifier import CNNMnist, WideResNetClassifier
-# from dengine.scenarios.decentralized import DecAvgClient
+from dengine.scenarios.decentralized import DecAvgClient
+from dengine.scenarios.federated import FederatedClient
 # from dengine.scenarios.centralized import CentralizedClient
 
 
@@ -25,8 +26,8 @@ from dengine.models.classifier import CNNMnist, WideResNetClassifier
 # SCENARIOS
 # ..... ..... ..... ..... ..... ..... ..... ..... #
 FEDERATED_CONFIGS = [
-    BUILTINS.CORE.SCENARIOS.DECENTRALIZED_HOMOGENOUS,
-    BUILTINS.CORE.GRAPH.STAR_51,
+    BUILTINS.CORE.SCENARIOS.FEDERATED,
+    BUILTINS.CORE.GRAPH.STAR_MEDIUM,
     BUILTINS.CORE.DATASETS.MNIST,
     BUILTINS.CORE.PARTITIONING.IID,
     Path("configs/core.yml")
@@ -46,7 +47,6 @@ DECENTRALIZED_ER_CONFIGS = [
     Path("configs/core.yml")
 ]
 CENTRALIZED_CONFIGS = [
-    BUILTINS.CORE.GRAPH.CENTRALIZED,
     BUILTINS.CORE.SCENARIOS.CENTRALIZED,
     BUILTINS.CORE.DATASETS.MNIST,
     BUILTINS.CORE.PARTITIONING.IID,
@@ -59,11 +59,11 @@ CENTRALIZED_CONFIG_OVERRIDES = {
     # "client.training_engine.arguments.epochs": 1500,
 }
 DECENTRALIZED_CONFIG_OVERRIDES = {
-    # "client.target": DecAvgClient.__name__,
+    "client.target": DecAvgClient.__name__,
     # Aggregation and Scenario ..... ..... #
-    # "scenario.arguments.common_init": True,
-    # "client.arguments.include_myself": True,
-    # "client.arguments.use_weighted_avg": True,
+    "scenario.arguments.common_init": True,
+    "client.arguments.include_myself": True,
+    "client.arguments.use_weighted_avg": True,
     # "scenario.arguments.max_communication_rounds": 200,
     # Training Engine ..... ..... #
     # "client.training_engine.arguments.optimizer": "Adam",
@@ -77,6 +77,28 @@ DECENTRALIZED_CONFIG_OVERRIDES = {
     # "partitioning.arguments.validation_percentage": 0.1,
 }
 
+FEDERATED_CONFIGS_OVERRIDES = {
+    # ┌──────────────────────────────────┐
+    # │  Aggregation and Scenario        │
+    # └──────────────────────────────────┘
+    "client.local_model.target": CNNMnist.__name__,
+    "client.target": FederatedClient.__name__,
+    "scenario.arguments.common_init": True,
+    "scenario.arguments.use_weighted_avg": True,
+    "scenario.arguments.max_communication_rounds": 20,  # (default 200)
+    # ┌──────────────────────────────────┐
+    # │  Training Engine                 │
+    # └──────────────────────────────────┘
+    # "client.training_engine.arguments.optimizer": "Adam",  (default SGD)
+    # "client.training_engine.arguments.lr": 0.0003,
+    # "client.training_engine.arguments.adam_weight_decay": 0.001,
+    # "client.training_engine.arguments.scheduler": "cosine",  (default none)
+    # "client.training_engine.arguments.patience": 5,
+    # "client.training_engine.arguments.epochs": 5,
+    # "client.training_engine.arguments.validation_batch_size": 32,
+    # "client.training_engine.arguments.training_batch_size": 32,
+    # "partitioning.arguments.validation_percentage": 0.1,
+}
 
 # ..... ..... ..... ..... ..... ..... ..... ..... #
 # ARCHITECTURE
@@ -117,7 +139,6 @@ def load_centralized_mnist(
 
 def load_mnist_decentralized(
     simulation_args: SimulationArguments,
-    config_overrides,
     architecture,
     debug: bool = False
 ):
@@ -133,7 +154,7 @@ def load_mnist_decentralized(
             overrides=convert_to_nested_dict({
                 "name": f"mnist,BA,DecAvg,{model_name}",
                 "graph.arguments.seed": simulation_args.seed,
-                **config_overrides,
+                **DECENTRALIZED_CONFIG_OVERRIDES,
                 **architecture,
                 **debug_argument
             }),
@@ -145,7 +166,7 @@ def load_mnist_decentralized(
             overrides=convert_to_nested_dict({
                 "name": f"mnist,ER,DecAvg,{model_name}",
                 "graph.arguments.seed": simulation_args.seed,
-                **config_overrides,
+                **DECENTRALIZED_CONFIG_OVERRIDES,
                 **architecture,
                 **debug_argument
             }),
@@ -156,7 +177,7 @@ def load_mnist_decentralized(
             files=[*FEDERATED_CONFIGS],
             overrides=convert_to_nested_dict({
                 "name": f"mnist,FedAvg,{model_name}",
-                **config_overrides,
+                **FEDERATED_CONFIGS_OVERRIDES,
                 **architecture,
                 **debug_argument
             }),
@@ -213,7 +234,7 @@ def main():
         for architecture_cfg in [CNN_MNIST, WIDE_RESNET]:
             configurations += [
                 *load_centralized_mnist(simulation_args, architecture=architecture_cfg, debug=extra_arguments.debug),
-                *load_mnist_decentralized(simulation_args, debug=extra_arguments.debug, architecture=architecture_cfg, config_overrides=DECENTRALIZED_CONFIG_OVERRIDES),
+                *load_mnist_decentralized(simulation_args, debug=extra_arguments.debug, architecture=architecture_cfg),
             ]
     except ValidationError as e:
         print("\n❌ Failed to parse the configuration due to the following validation errors: ")
