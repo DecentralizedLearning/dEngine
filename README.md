@@ -1,4 +1,5 @@
 # dEngine — A Decentralized Learning Framework
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/DecentralizedLearning/dEngine/blob/main/examples/MNIST/dEngine-MNIST.ipynb)
 
 > [!WARNING]
 > **This repository is currently under construction 🚧**
