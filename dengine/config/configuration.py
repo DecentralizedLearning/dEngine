@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import Optional, Dict, List, Union
+from typing import Optional, Dict, List, Union, Any
 from pathlib import Path
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 from .constants import (
     METRICS_DIR_NAME,
@@ -17,6 +17,13 @@ from .constants import (
 class DynamicModuleConfigBase(BaseModel):
     target: str
     arguments: Optional[Dict] = None
+
+    @field_validator("target", mode="before")
+    @classmethod
+    def resolve_to_qualname(cls, v: Any) -> Any:
+        if hasattr(v, "__qualname__"):
+            return v.__qualname__
+        return v
 
 
 class ClientModuleConfig(DynamicModuleConfigBase):

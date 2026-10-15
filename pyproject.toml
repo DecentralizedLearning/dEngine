@@ -21,7 +21,7 @@ dependencies = [
     "torch",
     "torchvision",
     "tqdm",
-    "transformers"
+    "httpx"
 ]
 
 [project.optional-dependencies]
@@ -36,7 +36,8 @@ serve = [
     "pyjwt"
 ]
 full = [
-    "dengine[dev,serve]"
+    "dengine[dev,serve]",
+    "transformers"
 ]
 
 [tool.setuptools.packages.find]

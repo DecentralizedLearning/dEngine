@@ -6,6 +6,7 @@ import ast
 import yaml
 import sys
 import importlib
+import inspect
 from pathlib import Path
 from types import ModuleType
 from typing import Optional, Type, TypeVar, List, Union, Tuple, Dict, Any
@@ -64,6 +65,17 @@ def replace_env_variables(data: Any) -> Any:
     return data
 
 
+def nameify_callables(data: Any) -> Any:
+    """Recursively converts classes and functions to their __name__."""
+    if isinstance(data, dict):
+        return {k: nameify_callables(v) for k, v in data.items()}
+    elif isinstance(data, (list, tuple)):
+        return type(data)(nameify_callables(v) for v in data)
+    elif inspect.isclass(data) or inspect.isroutine(data):
+        return data.__name__
+    return data
+
+
 def load_experiment_from_yamls(
     files: List[Path],
     validator: Type[TT] = ExperimentConfiguration,
@@ -72,6 +84,7 @@ def load_experiment_from_yamls(
 ) -> TT:
     exp_name = []
     config = {}
+    overrides = nameify_callables(overrides)
 
     for f in files:
         with open(f, 'r') as content:
