@@ -6,7 +6,6 @@ from torchvision.models import (
     mobilenet_v3_small,
     wide_resnet50_2, Wide_ResNet50_2_Weights
 )
-from transformers import ViTModel, ViTConfig
 
 from torch.utils.data import Subset
 import torch.nn.functional as F
@@ -238,6 +237,7 @@ class ViT(ModuleBase):
         super().__init__(dataset, *args, **kwargs)
         nclasses = len(get_unique_targets(dataset))
 
+        from transformers import ViTModel, ViTConfig
         config = ViTConfig.from_dict({
             "image_size": image_size,
             "patch_size": patch_size,
