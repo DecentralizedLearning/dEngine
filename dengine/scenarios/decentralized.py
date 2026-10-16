@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Sequence, TypeVar
+from typing import Any, List, Sequence, TypeVar
 from abc import abstractmethod
 from warnings import deprecated
 
@@ -76,7 +76,7 @@ class DecAvgClient(AbstractClient[TGenericVanillaDecentralizedMessage]):
         return messages_alpha
 
     def aggregation(self, messages: List[TGenericVanillaDecentralizedMessage]):
-        messages = self.filter_message_from_neighborhood(messages)
+        self.raise_on_non_neighbor_messages(messages)
         if len(messages) == 0:
             return
 
@@ -99,12 +99,13 @@ class DecAvgClient(AbstractClient[TGenericVanillaDecentralizedMessage]):
         )
         self.model.load_state_dict(model_avg)
 
-    def filter_message_from_neighborhood(
+    def raise_on_non_neighbor_messages(
         self,
         messages: Sequence[TGenericVanillaDecentralizedMessage]
-    ) -> List[TGenericVanillaDecentralizedMessage]:
+    ):
         neighbors = list(self._graph.neighbors(self.UUID))
-        return [m for m in messages if m.source_client.UUID in neighbors]
+        if any(m.source_client.UUID not in neighbors for m in messages):
+            raise ValueError("Received one or more messages from a non-neighboring client.")
 
     def get_trust_in_neighs(self):
         neighbors = list(self._graph.neighbors(self.UUID))
