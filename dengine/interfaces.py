@@ -18,7 +18,7 @@ from dengine.partitioning import TYPE_DATASET_PARTITIONING
 
 
 GenericClient = TypeVar("GenericClient", bound="ClientInterface")
-GenericMessage = TypeVar("GenericMessage", bound="MessageBase")
+GenericMessage = TypeVar("GenericMessage", bound="MessageBase[ClientInterface]")
 
 
 @dataclass
