@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, List, Sequence, TypeVar
+from typing import List, Sequence, TypeVar
 from abc import abstractmethod
 from warnings import deprecated
 
@@ -80,14 +80,6 @@ class DecAvgClient(AbstractClient[TGenericVanillaDecentralizedMessage]):
         if len(messages) == 0:
             return
 
-        message_origins = [_p.source_client.UUID for _p in messages]
-        message_times = [_p.time for _p in messages]
-        origins_with_times = [f"{src} at {t}" for src, t in zip(message_origins, message_times)]
-        logging.info(
-            f"PAIV-{self.UUID}: Aggregating {len(messages)} models. "
-            f"Sources/Timestamps: [{', '.join(origins_with_times)}]"
-        )
-
         if self._include_myself:
             messages.append(
                 VanillaDecentralizedMessage(time=messages[0].time, source_client=self)  # type: ignore
@@ -114,9 +106,6 @@ class DecAvgClient(AbstractClient[TGenericVanillaDecentralizedMessage]):
             for n in neighbors
         }
         return trust_dict
-
-    def get_dst_list(self):
-        return self._graph.neighbors(self.UUID)
 
 
 @deprecated("This class has been refactored to DecAvgClient, please consider refactoring.")
@@ -150,6 +139,9 @@ class DecentralizedScenarioEngineBase(AbstractScenarioEngine[DecAvgClient]):
     def get_active_clients(self) -> Sequence[DecAvgClient]:
         return list(self.clients.values())
 
+    def get_neighbors(self, client: AbstractClient):
+        return list(self._graph.neighbors(client.UUID))
+
     def run(self):
         for round in range(self._max_communication_rounds):
             logging.info(f"# Starting communication round **{round}**")
@@ -163,27 +155,31 @@ class DecentralizedScenarioEngineBase(AbstractScenarioEngine[DecAvgClient]):
     def _client_step(self, communication_round: int, client: DecAvgClient):
         logging.info(
             f"**[Client-{client.UUID}][CommunicationRound-{communication_round}]** \n"
-            "```"
         )
         with client_on_device_context(client, self._device):
             client.update(communication_round)
-            logging.info("```\n```")
             client.test(communication_round, self.test_data)
-            logging.info("```")
-        logging.info("```")
         self.synchronize_client(communication_round, client)
-        logging.info("```")
 
     @abstractmethod
     def synchronize_client(self, communication_round: int, client: DecAvgClient):
         raise NotImplementedError()
 
 
+def log_client_synchronization(
+    client: DecAvgClient,
+    communication_round: float,
+    destinations: List
+):
+    title = f"[{client.UUID}][CommunicationRound {communication_round}]"
+    logging.info(f"{title} Sending the local model to: {destinations}")
+
+
 @register_scenario()
 class VanillaDecentralizedSequential(DecentralizedScenarioEngineBase):
     def synchronize_client(self, communication_round: int, client: DecAvgClient):
-        destinations_idxs = list(client.get_dst_list())
-        logging.info(f"Sending the local model to: {destinations_idxs}")
+        destinations_idxs = self.get_neighbors(client)
+        log_client_synchronization(client, communication_round, destinations_idxs)
 
         client_checkpoint = deepcopy(client)
         for dst_id in destinations_idxs:
@@ -202,8 +198,8 @@ class VanillaDecentralized(VanillaDecentralizedSequential):
 @register_scenario()
 class DecentralizedShallowSyncReference(DecentralizedScenarioEngineBase):
     def synchronize_client(self, communication_round: int, client: DecAvgClient):
-        destinations_idxs = list(client.get_dst_list())
-        logging.info(f"Sending the local model to: {destinations_idxs}")
+        destinations_idxs = self.get_neighbors(client)
+        log_client_synchronization(client, communication_round, destinations_idxs)
 
         for dst_id in destinations_idxs:
             dst = self.get_client_by_id(dst_id)
@@ -232,10 +228,8 @@ class VanillaDecentralizedSynch(DecentralizedScenarioEngineBase):
             self.on_communication_round_end(_round)
 
     def synchronize_client(self, communication_round: int, client: DecAvgClient):
-        destinations_idxs = list(client.get_dst_list())
-
-        title = f"[Paiv-{client.UUID}][CommunicationRound {communication_round}]"
-        logging.info(f"{title} Sending the local model to: {destinations_idxs}")
+        destinations_idxs = self.get_neighbors(client)
+        log_client_synchronization(client, communication_round, destinations_idxs)
 
         client_checkpoint = deepcopy(client)
         for dst_id in destinations_idxs:
@@ -243,3 +237,51 @@ class VanillaDecentralizedSynch(DecentralizedScenarioEngineBase):
             dst.message_buffer.put(
                 VanillaDecentralizedMessage(time=communication_round, source_client=client_checkpoint)
             )
+
+
+@register_client()
+class GossipClient(AbstractClient[VanillaDecentralizedMessage]):
+    r"""Implementation of the more classic Gossip learning algorithm for distributed averaging usually found in literature (e.g. [1])
+
+    The following implementation is analogous to [2] and simply consist in rescaling the clients' weights accordingly as shown below:
+
+    \begin{align*}
+    w_i^{(t)} \leftarrow & w_i^{(t-1)} + \gamma \sum_{j \neq i} p_{ij} \Delta_{ij}^{(t-1)} \\
+                         & = w_i^{(t-1)} + \gamma \sum_{j \neq i} p_{ij} \left( w_j^{(t-1)} - w_i^{(t-1)} \right) \\
+                         & = - \gamma p_{ii} w_i^{(t-1)} + \gamma \sum_{j \neq i} \left( p_{ij} w_j^{(t-1)} - p_{ij} w_i^{(t-1)} \right) \\
+                         & = \gamma \left[ \left( \sum_{j \neq i} p_{ij} w_j^{(t-1)} \right) - \left( \sum_{j \neq i} p_{ij} w_i^{(t-1)} \right) - p_{ii} w_i^{(t-1)} \right] \\
+                         & = \gamma \left[ \left( \sum_{j \neq i} p_{ij} w_j^{(t-1)} \right) - w_i^{(t-1)} \sum_j p_{ij} \right] \\
+                         & = \gamma \sum_j \hat{p}_{ij} w_j^{(t-1)}
+    \end{align*}
+
+    \begin{equation*}
+    p_{ii} = - \frac{1}{\gamma} \quad \hat{p}_{ij} =
+    \begin{cases}
+    p_{ij} & \text{if } i \neq j \\
+    \frac{1}{\gamma} - \sum_{i \neq j} p_{ij}
+    \end{cases}
+    \end{equation*}
+
+    References:
+        [1] Xiao, Lin, and Stephen Boyd. "Fast linear iterations for distributed averaging." Systems & Control Letters 53.1 (2004): 65-78.
+        [2] Sun, Tao, Dongsheng Li, and Bao Wang. "Decentralized federated averaging." IEEE Transactions on Pattern Analysis and Machine Intelligence 45.4 (2022): 4289-4301.
+    """
+    def __init__(
+        self,
+        *args,
+        gamma: float = 1,
+        **kwargs
+    ):
+        super().__init__(*args, **kwargs)
+        self._gamma = gamma
+
+    @torch.no_grad()
+    def aggregation(self, messages: List[VanillaDecentralizedMessage]):
+        if len(messages) == 0:
+            return
+
+        for layer_key, layer_W in self.model.state_dict().items():
+            delta = 0
+            for msg in messages:
+                delta += layer_W - msg.source_client.model.state_dict()[layer_key]
+            layer_W = layer_W + (self._gamma / len(messages)) * delta
