@@ -175,6 +175,7 @@ class AbstractClient(ClientInterface[GenericMessage]):
         # 1. Perform synchronization
         self._callback.on_synchronization_start(current_time)
         messages = self.synchronization(current_time)
+        self._log_synchronized_messages(messages)
         self._callback.on_synchronization_end(current_time, messages)
 
         # 2. Aggregation
@@ -224,6 +225,15 @@ class AbstractClient(ClientInterface[GenericMessage]):
 
     def aggregation(self, messages: List[GenericMessage]):
         raise NotImplementedError()
+
+    def _log_synchronized_messages(self, messages: List[GenericMessage]):
+        message_origins = [_p.source_client.UUID for _p in messages]
+        message_times = [_p.time for _p in messages]
+        origins_with_times = [f"{src} at {t}" for src, t in zip(message_origins, message_times)]
+        logging.info(
+            f"{self.UUID}: aggregating {len(messages)} models. "
+            f"Sources/Timestamps: [{', '.join(origins_with_times)}]"
+        )
 
 
 class AbstractScenarioEngine(ScenarioEngineInterface, Generic[GenericClient]):
