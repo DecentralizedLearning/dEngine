@@ -41,9 +41,24 @@ def load_last_checkpoint(clients: Sequence[ClientInterface], checkpoint_dir: Pat
 
 
 def model_wise_weighted_average(L: Sequence[Dict[str, Tensor]], alpha_list: Sequence[float]):
-    '''
-    Computes the weighted federated averaged of the models
-    '''
+    """
+    Compute a weighted average of several complete state dicts.
+
+    Every model must contain all the layers of the first model. Each layer of
+    the output is the sum of the corresponding layers weighted by `alpha_list`.
+    The weights are used as given and are not normalized, so they should
+    usually sum to 1.
+
+    Args:
+        L: State dicts to average. All must share the keys of `L[0]`.
+        alpha_list: One weight per model, in the same order as `L`.
+
+    Returns:
+        A new state dict with the averaged layers (float32 tensors on CPU).
+
+    Raises:
+        KeyError: If a model is missing a layer present in `L[0]`
+    """
     w_avg: Dict[str, Tensor] = deepcopy(L[0])
     for layer in w_avg.keys():
         w_avg[layer] = w_avg[layer].float().cpu() * alpha_list[0]
@@ -57,14 +72,27 @@ def model_wise_weighted_average(L: Sequence[Dict[str, Tensor]], alpha_list: Sequ
 
 
 @torch.no_grad()
-def unsafe_compute_layer_wise_weighted_average(
+def unsafe_layer_wise_weighted_average(
     model_state_dicts: Sequence[Dict[str, Tensor]],
     reference_dict: Dict[str, Tensor],
     alpha: Optional[Sequence[float]] = None
 ):
-    '''
-    Computes the weighted federated averaged of the models. Allow for models to be partial
-    '''
+    """
+    Compute a weighted average of several state dicts, layer by layer.
+
+    Models may be partial: each layer is averaged only over the models that
+    contain it, and the weights are renormalized over those models. Layers not
+    present in any model keep their value from `reference_dict`.
+
+    Args:
+        model_state_dicts: State dicts to average. Each may contain a subset of layers.
+        reference_dict: Full state dict used as the base for the output.
+        alpha: One weight per model. If None, models are weighted equally.
+
+    Returns:
+        A copy of `reference_dict` with the averaged layers replaced
+        (averaged tensors are float32 on CPU).
+    """
     grouped_layers: Dict[str, List[Tensor]] = defaultdict(list)
     custom_layers_alphas: Dict[str, List[float]] = defaultdict(list)
     for i, ith_model in enumerate(model_state_dicts):
@@ -83,6 +111,62 @@ def unsafe_compute_layer_wise_weighted_average(
         stacked_weights = torch.stack(weight_list)
         layer_alpha_broadcast = layer_alpha.view(-1, *([1] * (stacked_weights.ndim - 1)))
         updated_dict[layer_name] = (stacked_weights * layer_alpha_broadcast).sum(dim=0)
+    return updated_dict
+
+
+@torch.no_grad()
+def unsafe_element_wise_weighted_average(
+    model_state_dicts: Sequence[Dict[str, Tensor]],
+    reference_dict: Dict[str, Tensor],
+    alpha: Optional[Sequence[float]] = None
+):
+    """
+    Compute a weighted average of several state dicts, entry by entry,
+    ignoring NaN values.
+
+    Models may be partial at two levels: a model can be missing whole layers,
+    and within a layer, missing entries can be marked as NaN. Each entry is
+    averaged only over the models that provide a non-NaN value for it, with
+    the weights renormalized over those models. Layers not present in any
+    model keep their value from `reference_dict`.
+
+    Args:
+        model_state_dicts: State dicts to average. Missing entries are NaN.
+        reference_dict: Full state dict used as the base for the output.
+        alpha: One weight per model. Required; None is not supported yet.
+
+    Returns:
+        A copy of `reference_dict` with the averaged layers replaced
+        (averaged tensors are float32 on CPU).
+
+    Raises:
+        NotImplementedError: If `alpha` is None.
+        AssertionError: If the result contains NaN, e.g. when an entry is
+            NaN in every model that has that layer.
+    """
+    grouped_layers: Dict[str, List[Tensor]] = defaultdict(list)
+    custom_layers_alphas: Dict[str, List[float]] = defaultdict(list)
+    for i, ith_model in enumerate(model_state_dicts):
+        for layer in ith_model.keys():
+            if alpha is not None:
+                custom_layers_alphas[layer].append(alpha[i])
+            grouped_layers[layer].append(ith_model[layer].float().cpu())
+
+    updated_dict = deepcopy(reference_dict)
+    for layer_name, weight_list in grouped_layers.items():
+        stacked_weights = torch.stack(weight_list)
+        if layer_name in custom_layers_alphas:
+            # 1. build the alpha tensor
+            _layer_alpha = torch.Tensor(custom_layers_alphas[layer_name])
+            _alpha_tensor = torch.zeros_like(torch.stack(weight_list))
+            _alpha_tensor[:] = _layer_alpha.view(-1, *([1] * (_alpha_tensor.ndim - 1)))
+            # 2. set to zero unreceived entries
+            _alpha_tensor = torch.where(torch.isnan(stacked_weights), 0, _alpha_tensor)
+            layer_alpha = _alpha_tensor / _alpha_tensor.sum(dim=0)
+        else:
+            raise NotImplementedError()
+        updated_dict[layer_name] = torch.mul(stacked_weights.nan_to_num(0), layer_alpha).sum(dim=0)
+    assert any([torch.isnan(v).any() for v in updated_dict.values()]) is False
     return updated_dict
 
 
