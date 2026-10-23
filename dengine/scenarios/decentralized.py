@@ -219,9 +219,9 @@ class VanillaDecentralizedSynch(DecentralizedScenarioEngineBase):
             for _client in self.get_active_clients():
                 with client_on_device_context(_client, self._device):
                     _client.update(_round)
-                self.synchronize_client(_round, _client)
 
             for _client in self.get_active_clients():
+                self.synchronize_client(_round, _client)
                 with client_on_device_context(_client, self._device):
                     _client.test(_round, self.test_data)
 
@@ -243,7 +243,8 @@ class VanillaDecentralizedSynch(DecentralizedScenarioEngineBase):
 class GossipClient(AbstractClient[VanillaDecentralizedMessage]):
     r"""Implementation of the more classic Gossip learning algorithm for distributed averaging usually found in literature (e.g. [1])
 
-    The following implementation is analogous to [2] and simply consist in rescaling the clients' weights accordingly as shown below:
+    The following implementation is analogous to [2] and simply consist in rescaling the clients' weights accordingly as shown below.
+    The original Exact Gossip formulation was taken from [3].
 
     \begin{align*}
     w_i^{(t)} \leftarrow & w_i^{(t-1)} + \gamma \sum_{j \neq i} p_{ij} \Delta_{ij}^{(t-1)} \\
@@ -265,6 +266,7 @@ class GossipClient(AbstractClient[VanillaDecentralizedMessage]):
     References:
         [1] Xiao, Lin, and Stephen Boyd. "Fast linear iterations for distributed averaging." Systems & Control Letters 53.1 (2004): 65-78.
         [2] Sun, Tao, Dongsheng Li, and Bao Wang. "Decentralized federated averaging." IEEE Transactions on Pattern Analysis and Machine Intelligence 45.4 (2022): 4289-4301.
+        [3] Koloskova, Anastasia, Sebastian Stich, and Martin Jaggi. "Decentralized stochastic optimization and gossip algorithms with compressed communication." International conference on machine learning. PMLR, 2019.
     """
     def __init__(
         self,
