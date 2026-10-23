@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from typing import List, Sequence, TypeVar
+from tqdm import tqdm
+import contextlib
 from abc import abstractmethod
 from warnings import deprecated
 
@@ -11,10 +13,10 @@ from dataclasses import dataclass
 import torch
 from torch.utils.data import Subset
 
-from dengine.scenarios.utils import client_on_device_context
 from dengine.models.utils import model_wise_weighted_average
 from dengine.interfaces import MessageBase
 
+from .utils import client_on_device_context, executor_context
 from .scenario import AbstractClient, AbstractScenarioEngine
 from .decorators import register_scenario, register_client
 
@@ -96,7 +98,6 @@ class FedAvgPaiv(DecAvgClient):
         super().__init__(*args, **kwargs)
 
 
-@register_scenario()
 class DecentralizedScenarioEngineBase(AbstractScenarioEngine[DecAvgClient]):
     def __init__(
         self,
@@ -111,9 +112,6 @@ class DecentralizedScenarioEngineBase(AbstractScenarioEngine[DecAvgClient]):
 
     def get_client_by_id(self, id) -> DecAvgClient:
         return self.clients[id]
-
-    def get_active_clients(self) -> Sequence[DecAvgClient]:
-        return list(self.clients.values())
 
     def get_neighbors(self, client: AbstractClient):
         return list(self._graph.neighbors(client.UUID))
@@ -142,8 +140,9 @@ def log_client_synchronization(
 @register_scenario()
 class VanillaDecentralizedSequential(DecentralizedScenarioEngineBase):
     def run(self):
+        clients = list(self.clients.values())
         for round in range(self._max_communication_rounds):
-            for client in self.get_active_clients():
+            for client in clients:
                 with client_on_device_context(client, self._device):
                     client.update(round)
                     client.test(round, self.test_data)
@@ -170,22 +169,55 @@ class VanillaDecentralized(VanillaDecentralizedSequential):
 
 @register_scenario()
 class VanillaDecentralizedSynch(DecentralizedScenarioEngineBase):
+    def __init__(
+        self,
+        *args,
+        num_parallel_clients: int = 1,
+        **kwargs
+    ):
+        super().__init__(*args, **kwargs)
+        self._num_parallel_clients = max(num_parallel_clients, 1)
+
     def run(self):
+        clients = list(self.clients.values())
+
         for _client in self.clients.values():
             _client.model.cpu()
             self.synchronize_client(-1, _client)
 
-        for _round in range(self._max_communication_rounds):
-            for _client in self.get_active_clients():
-                with client_on_device_context(_client, self._device):
+        pbar = tqdm(range(self._max_communication_rounds), desc="Communication round")
+
+        with executor_context(self._num_parallel_clients) as pool:
+            for _round in pbar:
+                shards = [
+                    clients[i::self._num_parallel_clients]
+                    for i in range(self._num_parallel_clients)
+                ]
+                futures = [
+                    pool.submit(self._run_clients_shard, _round, shard)
+                    for shard in shards if shard
+                ]
+                [f.result() for f in futures]
+
+                for _client in clients:
+                    self.synchronize_client(_round, _client)
+
+                self.on_communication_round_end(_round)
+
+    def _run_clients_shard(self, _round: int, clients: List[DecAvgClient]):
+        device = torch.device(self._device)
+
+        if device.type == 'cuda':
+            stream = torch.cuda.Stream(device=device)
+            stream_context = torch.cuda.stream(stream)
+        else:
+            stream_context = contextlib.nullcontext()
+
+        with stream_context:
+            for _client in clients:
+                with client_on_device_context(_client, device):
                     _client.update(_round)
-
-            for _client in self.get_active_clients():
-                with client_on_device_context(_client, self._device):
                     _client.test(_round, self.test_data)
-                self.synchronize_client(_round, _client)
-
-            self.on_communication_round_end(_round)
 
     def synchronize_client(self, communication_round: int, client: DecAvgClient):
         destinations_idxs = self.get_neighbors(client)
