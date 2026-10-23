@@ -27,20 +27,6 @@ class VanillaDecentralizedMessage(MessageBase):
 TGenericVanillaDecentralizedMessage = TypeVar("TGenericVanillaDecentralizedMessage", bound=VanillaDecentralizedMessage)
 
 
-def _client_wise_alpha_weighted_avg(
-    messages: Sequence[MessageBase[DecAvgClient]],
-    alpha_list: Sequence[float]
-):
-    '''
-    Computes the weighted federated averaged of the models
-    received from the paiv's social graph, weighted by their social trust
-    '''
-    return model_wise_weighted_average(
-        [m.source_client.model.state_dict() for m in messages],
-        alpha_list
-    )
-
-
 @register_client()
 class DecAvgClient(AbstractClient[TGenericVanillaDecentralizedMessage]):
     def __init__(
@@ -48,13 +34,11 @@ class DecAvgClient(AbstractClient[TGenericVanillaDecentralizedMessage]):
         training_data: Subset,
         *args,
         use_weighted_avg: bool,
-        selfconfidence: float = 1,
         include_myself: bool = False,
         **kwargs
     ):
         super().__init__(*args, training_data=training_data, **kwargs)
         self._include_myself = include_myself
-        self._selfconfidence = selfconfidence
         self._use_weighted_avg = use_weighted_avg
         self._graph = self._scenario.graph
         self.train_size = len(training_data)
@@ -85,8 +69,8 @@ class DecAvgClient(AbstractClient[TGenericVanillaDecentralizedMessage]):
                 VanillaDecentralizedMessage(time=messages[0].time, source_client=self)  # type: ignore
             )
 
-        model_avg = _client_wise_alpha_weighted_avg(
-            messages,
+        model_avg = model_wise_weighted_average(
+            [m.source_client.model.state_dict() for m in messages],
             self._get_alphas(messages)
         )
         self.model.load_state_dict(model_avg)
@@ -98,14 +82,6 @@ class DecAvgClient(AbstractClient[TGenericVanillaDecentralizedMessage]):
         neighbors = list(self._graph.neighbors(self.UUID))
         if any(m.source_client.UUID not in neighbors for m in messages):
             raise ValueError("Received one or more messages from a non-neighboring client.")
-
-    def get_trust_in_neighs(self):
-        neighbors = list(self._graph.neighbors(self.UUID))
-        trust_dict = {
-            n: self._graph.get_weight(self.UUID, n)
-            for n in neighbors
-        }
-        return trust_dict
 
 
 @deprecated("This class has been refactored to DecAvgClient, please consider refactoring.")
@@ -142,24 +118,12 @@ class DecentralizedScenarioEngineBase(AbstractScenarioEngine[DecAvgClient]):
     def get_neighbors(self, client: AbstractClient):
         return list(self._graph.neighbors(client.UUID))
 
-    def run(self):
-        for round in range(self._max_communication_rounds):
-            logging.info(f"# Starting communication round **{round}**")
-            for p in self.get_active_clients():
-                self._client_step(round, p)
-            self.on_communication_round_end(round)
-
     def on_communication_round_end(self, round_idx: int):
         pass
 
-    def _client_step(self, communication_round: int, client: DecAvgClient):
-        logging.info(
-            f"**[Client-{client.UUID}][CommunicationRound-{communication_round}]** \n"
-        )
-        with client_on_device_context(client, self._device):
-            client.update(communication_round)
-            client.test(communication_round, self.test_data)
-        self.synchronize_client(communication_round, client)
+    @abstractmethod
+    def run(self):
+        raise NotImplementedError()
 
     @abstractmethod
     def synchronize_client(self, communication_round: int, client: DecAvgClient):
@@ -177,6 +141,15 @@ def log_client_synchronization(
 
 @register_scenario()
 class VanillaDecentralizedSequential(DecentralizedScenarioEngineBase):
+    def run(self):
+        for round in range(self._max_communication_rounds):
+            for client in self.get_active_clients():
+                with client_on_device_context(client, self._device):
+                    client.update(round)
+                    client.test(round, self.test_data)
+                self.synchronize_client(round, client)
+            self.on_communication_round_end(round)
+
     def synchronize_client(self, communication_round: int, client: DecAvgClient):
         destinations_idxs = self.get_neighbors(client)
         log_client_synchronization(client, communication_round, destinations_idxs)
@@ -196,19 +169,6 @@ class VanillaDecentralized(VanillaDecentralizedSequential):
 
 
 @register_scenario()
-class DecentralizedShallowSyncReference(DecentralizedScenarioEngineBase):
-    def synchronize_client(self, communication_round: int, client: DecAvgClient):
-        destinations_idxs = self.get_neighbors(client)
-        log_client_synchronization(client, communication_round, destinations_idxs)
-
-        for dst_id in destinations_idxs:
-            dst = self.get_client_by_id(dst_id)
-            dst.message_buffer.put(
-                VanillaDecentralizedMessage(time=communication_round, source_client=client)
-            )
-
-
-@register_scenario()
 class VanillaDecentralizedSynch(DecentralizedScenarioEngineBase):
     def run(self):
         for _client in self.clients.values():
@@ -221,9 +181,9 @@ class VanillaDecentralizedSynch(DecentralizedScenarioEngineBase):
                     _client.update(_round)
 
             for _client in self.get_active_clients():
-                self.synchronize_client(_round, _client)
                 with client_on_device_context(_client, self._device):
                     _client.test(_round, self.test_data)
+                self.synchronize_client(_round, _client)
 
             self.on_communication_round_end(_round)
 
@@ -236,6 +196,19 @@ class VanillaDecentralizedSynch(DecentralizedScenarioEngineBase):
             dst = self.get_client_by_id(dst_id)
             dst.message_buffer.put(
                 VanillaDecentralizedMessage(time=communication_round, source_client=client_checkpoint)
+            )
+
+
+@register_scenario()
+class DecentralizedShallowSyncReference(VanillaDecentralizedSynch):
+    def synchronize_client(self, communication_round: int, client: DecAvgClient):
+        destinations_idxs = self.get_neighbors(client)
+        log_client_synchronization(client, communication_round, destinations_idxs)
+
+        for dst_id in destinations_idxs:
+            dst = self.get_client_by_id(dst_id)
+            dst.message_buffer.put(
+                VanillaDecentralizedMessage(time=communication_round, source_client=client)
             )
 
 
