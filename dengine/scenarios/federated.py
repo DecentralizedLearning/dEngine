@@ -3,7 +3,6 @@ from typing import List, TypeVar
 from dataclasses import dataclass
 from copy import deepcopy
 from queue import PriorityQueue
-import logging
 
 import torch
 from torch import nn
@@ -14,7 +13,7 @@ from dengine.interfaces import MessageBase, Graph
 from dengine.graph import NXGraph
 from dengine.scenarios.scenario import AbstractClient
 
-from .decentralized import DecentralizedScenarioEngineBase
+from .decentralized import VanillaDecentralizedSynch
 from .decorators import register_scenario, register_client
 
 
@@ -105,7 +104,7 @@ def _convert_dengine_graph_to_fed_topology(graph: Graph) -> Graph:
 
 
 @register_scenario()
-class VanillaFederatedScenario(DecentralizedScenarioEngineBase):
+class VanillaFederatedScenario(VanillaDecentralizedSynch):
     def __init__(
         self,
         use_weighted_avg: bool,
@@ -127,26 +126,16 @@ class VanillaFederatedScenario(DecentralizedScenarioEngineBase):
             list(self.clients.values())[0].model
         )
 
-    def get_client_by_id(self, id) -> FederatedClient:
-        return super().get_client_by_id(id)  # type: ignore
-
-    def get_active_clients(self) -> List[FederatedClient]:
-        return super().get_active_clients()  # type: ignore
-
     def on_communication_round_end(self, round_idx: int):
         super().on_communication_round_end(round_idx)
+        clients = list(self.clients.values())
 
         models = []
         alphas = []
-        for p in self.get_active_clients():
+        for p in clients:
             models.append(p.model.state_dict())
             alphas.append(p.train_size)
 
-        logging.info(
-            "``` \n"
-            f"Merging {len(models)} models coming from: {[p.UUID for p in self.get_active_clients()]} \n"
-            "```"
-        )
         if self._weight_avg:
             tot_alpha = sum(alphas)
             alphas = [i / tot_alpha for i in alphas]
@@ -160,7 +149,7 @@ class VanillaFederatedScenario(DecentralizedScenarioEngineBase):
             global_model=self._global_model,
             source_client=self._server_mock_client
         )
-        for p in self.get_active_clients():
+        for p in clients:
             p.message_buffer.put(msg)
 
     def synchronize_client(self, communication_round: int, client):

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from typing import List, Sequence, TypeVar
+from tqdm import tqdm
+import contextlib
 from abc import abstractmethod
 from warnings import deprecated
 
@@ -11,10 +13,10 @@ from dataclasses import dataclass
 import torch
 from torch.utils.data import Subset
 
-from dengine.scenarios.utils import client_on_device_context
 from dengine.models.utils import model_wise_weighted_average
 from dengine.interfaces import MessageBase
 
+from .utils import client_on_device_context, executor_context
 from .scenario import AbstractClient, AbstractScenarioEngine
 from .decorators import register_scenario, register_client
 
@@ -27,20 +29,6 @@ class VanillaDecentralizedMessage(MessageBase):
 TGenericVanillaDecentralizedMessage = TypeVar("TGenericVanillaDecentralizedMessage", bound=VanillaDecentralizedMessage)
 
 
-def _client_wise_alpha_weighted_avg(
-    messages: Sequence[MessageBase[DecAvgClient]],
-    alpha_list: Sequence[float]
-):
-    '''
-    Computes the weighted federated averaged of the models
-    received from the paiv's social graph, weighted by their social trust
-    '''
-    return model_wise_weighted_average(
-        [m.source_client.model.state_dict() for m in messages],
-        alpha_list
-    )
-
-
 @register_client()
 class DecAvgClient(AbstractClient[TGenericVanillaDecentralizedMessage]):
     def __init__(
@@ -48,13 +36,11 @@ class DecAvgClient(AbstractClient[TGenericVanillaDecentralizedMessage]):
         training_data: Subset,
         *args,
         use_weighted_avg: bool,
-        selfconfidence: float = 1,
         include_myself: bool = False,
         **kwargs
     ):
         super().__init__(*args, training_data=training_data, **kwargs)
         self._include_myself = include_myself
-        self._selfconfidence = selfconfidence
         self._use_weighted_avg = use_weighted_avg
         self._graph = self._scenario.graph
         self.train_size = len(training_data)
@@ -85,8 +71,8 @@ class DecAvgClient(AbstractClient[TGenericVanillaDecentralizedMessage]):
                 VanillaDecentralizedMessage(time=messages[0].time, source_client=self)  # type: ignore
             )
 
-        model_avg = _client_wise_alpha_weighted_avg(
-            messages,
+        model_avg = model_wise_weighted_average(
+            [m.source_client.model.state_dict() for m in messages],
             self._get_alphas(messages)
         )
         self.model.load_state_dict(model_avg)
@@ -98,14 +84,6 @@ class DecAvgClient(AbstractClient[TGenericVanillaDecentralizedMessage]):
         neighbors = list(self._graph.neighbors(self.UUID))
         if any(m.source_client.UUID not in neighbors for m in messages):
             raise ValueError("Received one or more messages from a non-neighboring client.")
-
-    def get_trust_in_neighs(self):
-        neighbors = list(self._graph.neighbors(self.UUID))
-        trust_dict = {
-            n: self._graph.get_weight(self.UUID, n)
-            for n in neighbors
-        }
-        return trust_dict
 
 
 @deprecated("This class has been refactored to DecAvgClient, please consider refactoring.")
@@ -120,7 +98,6 @@ class FedAvgPaiv(DecAvgClient):
         super().__init__(*args, **kwargs)
 
 
-@register_scenario()
 class DecentralizedScenarioEngineBase(AbstractScenarioEngine[DecAvgClient]):
     def __init__(
         self,
@@ -136,30 +113,15 @@ class DecentralizedScenarioEngineBase(AbstractScenarioEngine[DecAvgClient]):
     def get_client_by_id(self, id) -> DecAvgClient:
         return self.clients[id]
 
-    def get_active_clients(self) -> Sequence[DecAvgClient]:
-        return list(self.clients.values())
-
     def get_neighbors(self, client: AbstractClient):
         return list(self._graph.neighbors(client.UUID))
-
-    def run(self):
-        for round in range(self._max_communication_rounds):
-            logging.info(f"# Starting communication round **{round}**")
-            for p in self.get_active_clients():
-                self._client_step(round, p)
-            self.on_communication_round_end(round)
 
     def on_communication_round_end(self, round_idx: int):
         pass
 
-    def _client_step(self, communication_round: int, client: DecAvgClient):
-        logging.info(
-            f"**[Client-{client.UUID}][CommunicationRound-{communication_round}]** \n"
-        )
-        with client_on_device_context(client, self._device):
-            client.update(communication_round)
-            client.test(communication_round, self.test_data)
-        self.synchronize_client(communication_round, client)
+    @abstractmethod
+    def run(self):
+        raise NotImplementedError()
 
     @abstractmethod
     def synchronize_client(self, communication_round: int, client: DecAvgClient):
@@ -177,6 +139,16 @@ def log_client_synchronization(
 
 @register_scenario()
 class VanillaDecentralizedSequential(DecentralizedScenarioEngineBase):
+    def run(self):
+        clients = list(self.clients.values())
+        for round in range(self._max_communication_rounds):
+            for client in clients:
+                with client_on_device_context(client, self._device):
+                    client.update(round)
+                    client.test(round, self.test_data)
+                self.synchronize_client(round, client)
+            self.on_communication_round_end(round)
+
     def synchronize_client(self, communication_round: int, client: DecAvgClient):
         destinations_idxs = self.get_neighbors(client)
         log_client_synchronization(client, communication_round, destinations_idxs)
@@ -196,36 +168,56 @@ class VanillaDecentralized(VanillaDecentralizedSequential):
 
 
 @register_scenario()
-class DecentralizedShallowSyncReference(DecentralizedScenarioEngineBase):
-    def synchronize_client(self, communication_round: int, client: DecAvgClient):
-        destinations_idxs = self.get_neighbors(client)
-        log_client_synchronization(client, communication_round, destinations_idxs)
-
-        for dst_id in destinations_idxs:
-            dst = self.get_client_by_id(dst_id)
-            dst.message_buffer.put(
-                VanillaDecentralizedMessage(time=communication_round, source_client=client)
-            )
-
-
-@register_scenario()
 class VanillaDecentralizedSynch(DecentralizedScenarioEngineBase):
+    def __init__(
+        self,
+        *args,
+        num_parallel_clients: int = 1,
+        **kwargs
+    ):
+        super().__init__(*args, **kwargs)
+        self._num_parallel_clients = max(num_parallel_clients, 1)
+
     def run(self):
+        clients = list(self.clients.values())
+
         for _client in self.clients.values():
             _client.model.cpu()
             self.synchronize_client(-1, _client)
 
-        for _round in range(self._max_communication_rounds):
-            for _client in self.get_active_clients():
-                with client_on_device_context(_client, self._device):
+        pbar = tqdm(range(self._max_communication_rounds), desc="Communication round")
+
+        with executor_context(self._num_parallel_clients) as pool:
+            for _round in pbar:
+                shards = [
+                    clients[i::self._num_parallel_clients]
+                    for i in range(self._num_parallel_clients)
+                ]
+                futures = [
+                    pool.submit(self._run_clients_shard, _round, shard)
+                    for shard in shards if shard
+                ]
+                [f.result() for f in futures]
+
+                for _client in clients:
+                    self.synchronize_client(_round, _client)
+
+                self.on_communication_round_end(_round)
+
+    def _run_clients_shard(self, _round: int, clients: List[DecAvgClient]):
+        device = torch.device(self._device)
+
+        if device.type == 'cuda':
+            stream = torch.cuda.Stream(device=device)
+            stream_context = torch.cuda.stream(stream)
+        else:
+            stream_context = contextlib.nullcontext()
+
+        with stream_context:
+            for _client in clients:
+                with client_on_device_context(_client, device):
                     _client.update(_round)
-                self.synchronize_client(_round, _client)
-
-            for _client in self.get_active_clients():
-                with client_on_device_context(_client, self._device):
                     _client.test(_round, self.test_data)
-
-            self.on_communication_round_end(_round)
 
     def synchronize_client(self, communication_round: int, client: DecAvgClient):
         destinations_idxs = self.get_neighbors(client)
@@ -239,11 +231,25 @@ class VanillaDecentralizedSynch(DecentralizedScenarioEngineBase):
             )
 
 
+@register_scenario()
+class DecentralizedShallowSyncReference(VanillaDecentralizedSynch):
+    def synchronize_client(self, communication_round: int, client: DecAvgClient):
+        destinations_idxs = self.get_neighbors(client)
+        log_client_synchronization(client, communication_round, destinations_idxs)
+
+        for dst_id in destinations_idxs:
+            dst = self.get_client_by_id(dst_id)
+            dst.message_buffer.put(
+                VanillaDecentralizedMessage(time=communication_round, source_client=client)
+            )
+
+
 @register_client()
 class GossipClient(AbstractClient[VanillaDecentralizedMessage]):
     r"""Implementation of the more classic Gossip learning algorithm for distributed averaging usually found in literature (e.g. [1])
 
-    The following implementation is analogous to [2] and simply consist in rescaling the clients' weights accordingly as shown below:
+    The following implementation is analogous to [2] and simply consist in rescaling the clients' weights accordingly as shown below.
+    The original Exact Gossip formulation was taken from [3].
 
     \begin{align*}
     w_i^{(t)} \leftarrow & w_i^{(t-1)} + \gamma \sum_{j \neq i} p_{ij} \Delta_{ij}^{(t-1)} \\
@@ -265,6 +271,7 @@ class GossipClient(AbstractClient[VanillaDecentralizedMessage]):
     References:
         [1] Xiao, Lin, and Stephen Boyd. "Fast linear iterations for distributed averaging." Systems & Control Letters 53.1 (2004): 65-78.
         [2] Sun, Tao, Dongsheng Li, and Bao Wang. "Decentralized federated averaging." IEEE Transactions on Pattern Analysis and Machine Intelligence 45.4 (2022): 4289-4301.
+        [3] Koloskova, Anastasia, Sebastian Stich, and Martin Jaggi. "Decentralized stochastic optimization and gossip algorithms with compressed communication." International conference on machine learning. PMLR, 2019.
     """
     def __init__(
         self,

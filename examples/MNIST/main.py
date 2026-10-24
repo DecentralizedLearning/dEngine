@@ -5,6 +5,7 @@ from argparse import ArgumentParser
 import signal
 import torch.multiprocessing as mp
 import json
+from typing import List, Dict, Any
 
 from tqdm import tqdm
 from pydantic import ValidationError
@@ -25,28 +26,28 @@ from dengine.scenarios.federated import FederatedClient
 # ..... ..... ..... ..... ..... ..... ..... ..... #
 # SCENARIOS
 # ..... ..... ..... ..... ..... ..... ..... ..... #
-FEDERATED_CONFIGS = [
+FEDERATED_CONFIGS_FILES = [
     BUILTINS.CORE.SCENARIOS.FEDERATED,
     BUILTINS.CORE.GRAPH.STAR_MEDIUM,
     BUILTINS.CORE.DATASETS.MNIST,
     BUILTINS.CORE.PARTITIONING.IID,
     Path("configs/core.yml")
 ]
-DECENTRALIZED_BA_CONFIGS = [
+DECENTRALIZED_BA_CONFIGS_FILES = [
     BUILTINS.CORE.SCENARIOS.DECENTRALIZED_HOMOGENOUS,
     BUILTINS.CORE.GRAPH.BA_MEDIUM,
     BUILTINS.CORE.DATASETS.MNIST,
     BUILTINS.CORE.PARTITIONING.IID,
     Path("configs/core.yml")
 ]
-DECENTRALIZED_ER_CONFIGS = [
+DECENTRALIZED_ER_CONFIGS_FILES = [
     BUILTINS.CORE.SCENARIOS.DECENTRALIZED_HOMOGENOUS,
     BUILTINS.CORE.GRAPH.ER_MEDIUM,
     BUILTINS.CORE.DATASETS.MNIST,
     BUILTINS.CORE.PARTITIONING.IID,
     Path("configs/core.yml")
 ]
-CENTRALIZED_CONFIGS = [
+CENTRALIZED_CONFIGS_FILES = [
     BUILTINS.CORE.SCENARIOS.CENTRALIZED,
     BUILTINS.CORE.DATASETS.MNIST,
     BUILTINS.CORE.PARTITIONING.IID,
@@ -114,77 +115,94 @@ WIDE_RESNET = {
 
 def load_centralized_mnist(
     simulation_args: SimulationArguments,
-    architecture,
+    additional_config_overrides,
     debug: bool = False
 ):
     debug_argument = {
         "client.arguments.debug_skip_training": True,
         "client.arguments.debug_skip_test": True
     } if debug else {}
-    model_name = architecture['client.local_model.target']
-    return [
-        load_experiment_from_yamls(
-            files=[*CENTRALIZED_CONFIGS],
-            overrides=convert_to_nested_dict({
-                "name": f"mnist,Centralized,{model_name}",
-                **CENTRALIZED_CONFIG_OVERRIDES,
-                **debug_argument,
-                **architecture,
-            }),
-            experiments_directory_root=str(simulation_args.output_directory.absolute()),
-            seed=simulation_args.seed,
-        )
-    ]
+    config = load_experiment_from_yamls(
+        files=[*CENTRALIZED_CONFIGS_FILES],
+        overrides=convert_to_nested_dict({
+            **CENTRALIZED_CONFIG_OVERRIDES,
+            **debug_argument,
+            **additional_config_overrides,
+        }),
+        experiments_directory_root=str(simulation_args.output_directory.absolute()),
+        seed=simulation_args.seed,
+    )
+    config.name = f"mnist,Centralized,{config.client.local_model.target}"
+    return config
 
 
-def load_mnist_decentralized(
+def load_decentralized(
     simulation_args: SimulationArguments,
-    architecture,
-    debug: bool = False
+    config_files: List[Path] = [],
+    additional_config_overrides: Dict[str, Any] = {},
+    debug: bool = False,
 ):
     debug_argument = {
         "client.arguments.debug_skip_training": True,
         "client.arguments.debug_skip_test": True
     } if debug else {}
 
-    model_name = architecture['client.local_model.target']
-    return [
-        load_experiment_from_yamls(
-            files=[*DECENTRALIZED_BA_CONFIGS],
-            overrides=convert_to_nested_dict({
-                "name": f"mnist,BA,DecAvg,{model_name}",
-                "graph.arguments.seed": simulation_args.seed,
-                **DECENTRALIZED_CONFIG_OVERRIDES,
-                **architecture,
-                **debug_argument
-            }),
-            experiments_directory_root=str(simulation_args.output_directory.absolute()),
-            seed=simulation_args.seed,
-        ),
-        load_experiment_from_yamls(
-            files=[*DECENTRALIZED_ER_CONFIGS],
-            overrides=convert_to_nested_dict({
-                "name": f"mnist,ER,DecAvg,{model_name}",
-                "graph.arguments.seed": simulation_args.seed,
-                **DECENTRALIZED_CONFIG_OVERRIDES,
-                **architecture,
-                **debug_argument
-            }),
-            experiments_directory_root=str(simulation_args.output_directory.absolute()),
-            seed=simulation_args.seed,
-        ),
-        load_experiment_from_yamls(
-            files=[*FEDERATED_CONFIGS],
-            overrides=convert_to_nested_dict({
-                "name": f"mnist,FedAvg,{model_name}",
-                **FEDERATED_CONFIGS_OVERRIDES,
-                **architecture,
-                **debug_argument
-            }),
-            experiments_directory_root=str(simulation_args.output_directory.absolute()),
-            seed=simulation_args.seed,
-        ),
-    ]
+    configs = []
+
+    ba_config = load_experiment_from_yamls(
+        files=[*config_files, *DECENTRALIZED_BA_CONFIGS_FILES],
+        overrides=convert_to_nested_dict({
+            "graph.arguments.seed": simulation_args.seed,
+            **debug_argument,
+            **DECENTRALIZED_CONFIG_OVERRIDES,
+            **additional_config_overrides
+        }),
+        experiments_directory_root=str(simulation_args.output_directory.absolute()),
+        seed=simulation_args.seed,
+    )
+    ba_config.name = (
+        f"{ba_config.dataset.train.target},"
+        "BA,DecAvg,"
+        f"{ba_config.client.local_model.target}"
+    )
+    configs.append(ba_config)
+
+    er_config = load_experiment_from_yamls(
+        files=[*config_files, *DECENTRALIZED_ER_CONFIGS_FILES],
+        overrides=convert_to_nested_dict({
+            "graph.arguments.seed": simulation_args.seed,
+            **debug_argument,
+            **DECENTRALIZED_CONFIG_OVERRIDES,
+            **additional_config_overrides
+        }),
+        experiments_directory_root=str(simulation_args.output_directory.absolute()),
+        seed=simulation_args.seed,
+    )
+    er_config.name = (
+        f"{er_config.dataset.train.target},"
+        "ER,DecAvg,"
+        f"{er_config.client.local_model.target}"
+    )
+    configs.append(er_config)
+
+    fed_config = load_experiment_from_yamls(
+        files=[*config_files, *FEDERATED_CONFIGS_FILES],
+        overrides=convert_to_nested_dict({
+            **debug_argument,
+            **FEDERATED_CONFIGS_OVERRIDES,
+            **additional_config_overrides
+        }),
+        experiments_directory_root=str(simulation_args.output_directory.absolute()),
+        seed=simulation_args.seed,
+    )
+    fed_config.name = (
+        f"{fed_config.dataset.train.target},"
+        "FedAvg,"
+        f"{fed_config.client.local_model.target}"
+    )
+    configs.append(fed_config)
+
+    return configs
 
 
 # ..... ..... ..... ..... ..... ..... ..... ..... #
@@ -209,10 +227,16 @@ def _run_config(
 def main():
     parser = ArgumentParser()
     parser.add_argument(
-        "--concurrent-runs",
+        "--concurrent_runs",
         type=int,
         default=1,
         help="Number of configurations to run in parallel (default: 1)."
+    )
+    parser.add_argument(
+        "--num_parallel_clients",
+        type=int,
+        default=1,
+        help="Number of clients to run in parallel in each simulation (default: 1)."
     )
     parser.add_argument(
         "--experiment_name_filter",
@@ -233,8 +257,15 @@ def main():
     try:
         for architecture_cfg in [CNN_MNIST, WIDE_RESNET]:
             configurations += [
-                *load_centralized_mnist(simulation_args, architecture=architecture_cfg, debug=extra_arguments.debug),
-                *load_mnist_decentralized(simulation_args, debug=extra_arguments.debug, architecture=architecture_cfg),
+                load_centralized_mnist(simulation_args, additional_config_overrides=architecture_cfg, debug=extra_arguments.debug),
+                *load_decentralized(
+                    simulation_args,
+                    additional_config_overrides={
+                        "scenario.arguments.num_parallel_clients": extra_arguments.num_parallel_clients,
+                        **architecture_cfg
+                    },
+                    debug=extra_arguments.debug
+                ),
             ]
     except ValidationError as e:
         print("\n❌ Failed to parse the configuration due to the following validation errors: ")

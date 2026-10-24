@@ -206,7 +206,7 @@ class FederatedScaffoldScenario(DecentralizedScenarioEngineBase):
         self._N = len(self.clients)
 
     def get_active_clients(self) -> List[ScaffoldClient]:
-        return super().get_active_clients()  # type: ignore
+        return list(self.clients.values())  # type: ignore
 
     def run(self):
         for round in range(self._max_communication_rounds):
@@ -224,15 +224,9 @@ class FederatedScaffoldScenario(DecentralizedScenarioEngineBase):
         communication_round: int,
         client: ScaffoldClient
     ) -> Tuple[ScaffoldServerUpdateMessage, List[Tensor]]:
-        logging.info(
-            f"**[Client-{client.UUID}][CommunicationRound-{communication_round}]** \n"
-            "```"
-        )
         with client_on_device_context(client, self._device):
             client.update(communication_round)
-            logging.info("```\n```")
             client.test(communication_round, self.test_data)
-            logging.info("```")
         return self.synchronize_client(communication_round, client)
 
     @torch.no_grad()
@@ -277,11 +271,6 @@ class FederatedScaffoldScenario(DecentralizedScenarioEngineBase):
         round_ci: List[List[Tensor]]
     ):
         super().on_communication_round_end(round_idx)
-        logging.info(
-            "``` \n"
-            f"Merging models coming from: {[p.UUID for p in self.get_active_clients()]} \n"
-            "```"
-        )
 
         clients = self.get_active_clients()
         S = len(clients)
