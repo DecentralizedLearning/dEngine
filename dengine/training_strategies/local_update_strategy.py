@@ -1,6 +1,7 @@
 from abc import abstractmethod
 
 from typing import Optional, Literal, Dict
+import threading
 from warnings import deprecated
 import copy
 import json
@@ -74,6 +75,10 @@ class EarlyStoppingBase(LocalTrainingEngineInterface):
         self._validation_data = validation_data
 
     @property
+    def verbose(self):
+        return self._verbose and threading.current_thread() is threading.main_thread()
+
+    @property
     def callback(self) -> ClientCallbackInterface:
         return self._callback
 
@@ -92,7 +97,7 @@ class EarlyStoppingBase(LocalTrainingEngineInterface):
         def mock_call(s: str):
             pass
 
-        if not self._verbose:
+        if not self.verbose:
             return mock_call
         return logging.info
 
@@ -101,7 +106,7 @@ class EarlyStoppingBase(LocalTrainingEngineInterface):
         def mock_call(s: str):
             pass
 
-        if not self._verbose:
+        if not self.verbose:
             return mock_call
         return logging.warning
 
@@ -148,11 +153,12 @@ class EarlyStoppingBase(LocalTrainingEngineInterface):
             range(self._local_epochs),
             ascii=True,
             leave=False,
-            total=self._local_epochs
+            total=self._local_epochs,
+            disable=not self.verbose
         )
         for current_epoch in epoch_pbar:
             Y_hat_train = []
-            epoch_pbar.set_description(f'Epoch {current_epoch}/{self._local_epochs} (patience: {patience}/{self._patience}): ')
+            epoch_pbar.set_description(f'[{self._client.UUID}] Epoch {current_epoch}/{self._local_epochs} (patience: {patience}/{self._patience}): ')
             self.callback.on_training_epoch_start(current_epoch)
 
             # 2. Looping over batches
@@ -161,7 +167,9 @@ class EarlyStoppingBase(LocalTrainingEngineInterface):
                 enumerate(self._ldr_train),
                 ascii=True,
                 leave=False,
-                total=(total_samples // self._training_batch_size)
+                total=(total_samples // self._training_batch_size),
+                desc=f"[{self._client.UUID}] Iterating over batches",
+                disable=not self.verbose
             )
             cumulated_loss = 0
             for batch_idx, batch_data in batch_iter:
