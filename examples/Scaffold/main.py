@@ -68,7 +68,7 @@ SCAFFOLD_CONFIGS_OVERRIDES = {
 
 
 def load_mnist_configurations(simulation_args: SimulationArguments):
-    return [
+    configs = [
         load_experiment_from_yamls(
             files=[*DECENTRALIZED_CONFIGS, *MNIST_BA_CONFIGS],
             overrides=convert_to_nested_dict({
@@ -119,17 +119,26 @@ def load_mnist_configurations(simulation_args: SimulationArguments):
             experiments_directory_root=str(simulation_args.output_directory),
             seed=simulation_args.seed,
         ),
-        load_experiment_from_yamls(
-            files=[*SCAFFOLD_CONFIGS, *MNIST_BA_CONFIGS],
-            overrides=convert_to_nested_dict({
-                "name": "mnist,Scaffold,balanced",
-                **MNIST_CONFIG_OVERRIDES,
-                **SCAFFOLD_CONFIGS_OVERRIDES
-            }),
-            experiments_directory_root=str(simulation_args.output_directory),
-            seed=simulation_args.seed,
-        ),
     ]
+    scaffold_config = load_experiment_from_yamls(
+        files=[*SCAFFOLD_CONFIGS, *MNIST_BA_CONFIGS],
+        overrides=convert_to_nested_dict({
+            "name": "mnist,Scaffold,balanced",
+            **MNIST_CONFIG_OVERRIDES,
+            **SCAFFOLD_CONFIGS_OVERRIDES
+        }),
+        experiments_directory_root=str(simulation_args.output_directory),
+        seed=simulation_args.seed,
+    )
+    # BUILTINS.CORE.DATASETS.MNIST also defines a default client training engine
+    # (SGD with momentum). ScaffoldLocalUpdate only supports plain SGD and takes no
+    # `optimizer`/`sgd_momentum` arguments, so drop them here.
+    # A cleaner fix would be a Scaffold-specific MNIST config that defines its own
+    # training engine; this example keeps it simple to avoid extra config files.
+    args = scaffold_config.client.training_engine.arguments
+    for k in ("optimizer", "sgd_momentum"):
+        args.pop(k, None)
+    return [*configs, scaffold_config]
 
 
 # ..... ..... ..... ..... ..... ..... ..... ..... #
@@ -154,7 +163,7 @@ def _run_config(
 def main():
     parser = ArgumentParser()
     parser.add_argument(
-        "--concurrent-runs",
+        "--concurrent_runs",
         type=int,
         default=1,
         help="Number of configurations to run in parallel (default: 1)."
