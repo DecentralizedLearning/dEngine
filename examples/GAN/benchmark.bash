@@ -27,10 +27,12 @@ DEFAULT_CONFIG_OVERRIDES=" \
     dataset_test.arguments.augmentations=False
 "
 
+CONFIGS_BASE_PATH="../../configs"
+
 dengine-simulate \
-    --config core/datasets/mnist.yml \
-    core/scenarios/centralized.yml \
-    core/partitioning/iid.yml \
+    --config ${CONFIGS_BASE_PATH}/core/datasets/mnist.yml \
+    ${CONFIGS_BASE_PATH}/core/scenarios/centralized.yml \
+    ${CONFIGS_BASE_PATH}/core/partitioning/iid.yml \
     configs/memnet_1M.yml \
     ${DEFAULT_OPTIONS} \
     --output_directory ${OUTPUT_DIRECTORY_PREFIX}/GAN name=mnist,GAN \
@@ -38,9 +40,9 @@ dengine-simulate \
     $DEFAULT_CONFIG_OVERRIDES
 
 dengine-simulate \
-    --config core/datasets/cifar10.yml \
-    core/scenarios/centralized.yml \
-    core/partitioning/iid.yml \
+    --config ${CONFIGS_BASE_PATH}/core/datasets/cifar10.yml \
+    ${CONFIGS_BASE_PATH}/core/scenarios/centralized.yml \
+    ${CONFIGS_BASE_PATH}/core/partitioning/iid.yml \
     configs/memnet_30M.yml \
     ${DEFAULT_OPTIONS} \
     --output_directory ${OUTPUT_DIRECTORY_PREFIX}/GAN name=cifar10,GAN \
@@ -48,9 +50,9 @@ dengine-simulate \
     $DEFAULT_CONFIG_OVERRIDES
 
 dengine-simulate \
-    --config core/datasets/cifar100.yml \
-    core/scenarios/centralized.yml \
-    core/partitioning/iid.yml \
+    --config ${CONFIGS_BASE_PATH}/core/datasets/cifar100.yml \
+    ${CONFIGS_BASE_PATH}/core/scenarios/centralized.yml \
+    ${CONFIGS_BASE_PATH}/core/partitioning/iid.yml \
     configs/memnet_30M.yml \
     ${DEFAULT_OPTIONS} \
     --output_directory ${OUTPUT_DIRECTORY_PREFIX}/GAN name=cifa100,GAN \
