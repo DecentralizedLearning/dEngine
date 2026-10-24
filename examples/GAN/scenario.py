@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from typing import List, Tuple
-import logging
 from dataclasses import dataclass
 
 from torch import nn, Tensor
@@ -137,11 +136,9 @@ class GANPaiv(DecAvgClient):
         self.model: MemNet
 
     def aggregation(self, messages: List[GANPaivSyncMessage]):
-        messages = self.filter_message_from_neighborhood(messages)
+        self.raise_on_non_neighbor_messages(messages)
         if len(messages) == 0:
             return
-        message_origins = [_p.source_paiv.UUID for _p in messages]
-        logging.info(f"PAIV-{self.UUID}, aggregating models sent by: {message_origins}")
 
         embeddings = [m.source_paiv.model.embedding_layer.state_dict() for m in messages]
         generators = [m.source_paiv.model.generator.state_dict() for m in messages]

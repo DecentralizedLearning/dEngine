@@ -27,7 +27,7 @@ DEFAULT_CONFIG_OVERRIDES=" \
     dataset_test.arguments.augmentations=False
 "
 
-simulate \
+dengine-simulate \
     --config core/datasets/mnist.yml \
     core/scenarios/centralized.yml \
     core/partitioning/iid.yml \
@@ -37,7 +37,7 @@ simulate \
     client.training_engine.arguments.epochs=250 \
     $DEFAULT_CONFIG_OVERRIDES
 
-simulate \
+dengine-simulate \
     --config core/datasets/cifar10.yml \
     core/scenarios/centralized.yml \
     core/partitioning/iid.yml \
@@ -47,7 +47,7 @@ simulate \
     client.training_engine.arguments.epochs=500 \
     $DEFAULT_CONFIG_OVERRIDES
 
-simulate \
+dengine-simulate \
     --config core/datasets/cifar100.yml \
     core/scenarios/centralized.yml \
     core/partitioning/iid.yml \
