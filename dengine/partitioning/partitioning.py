@@ -158,8 +158,10 @@ def clip_iid_partitions_samples(
     partitioning: TYPE_DATASET_PARTITIONING,
     mapping: Dict[int, float] = {},
 ) -> TYPE_DATASET_PARTITIONING:
-    for key in partitioning:  # train / validation
-        idxs = partitioning[0][key]
+    str_mapping = {str(k): v for k, v in mapping.items()}  # accept int or str class labels
+    reference_node = next(iter(partitioning))
+    for key in ("train", "validation"):
+        idxs = partitioning[reference_node][key]
         max_class_available_samples = torch.sum(
             dataset.targets[idxs] == dataset.unique_targets[0]
         )
@@ -170,14 +172,14 @@ def clip_iid_partitions_samples(
             for ith_idx in device_partition[key]:
                 ith_target = dataset.targets[ith_idx]
                 mapping_target = str(int(ith_target))
-                if mapping_target not in mapping.keys():
+                if mapping_target not in str_mapping:
                     new_ith_partition.append(ith_idx)
                     continue
 
-                allowed_samples = int(mapping[mapping_target] * max_class_available_samples)
-                if counters[ith_target] <= allowed_samples:
+                allowed_samples = int(str_mapping[mapping_target] * max_class_available_samples)
+                if counters[ith_target] < allowed_samples:
                     new_ith_partition.append(ith_idx)
                     counters[ith_target] += 1
                     continue
-            partitioning[device_id][key] = torch.stack(new_ith_partition)
+            partitioning[device_id][key] = torch.stack(new_ith_partition) if new_ith_partition else device_partition[key][:0]
     return partitioning
