@@ -194,17 +194,20 @@ class VanillaDecentralizedSynch(DecentralizedScenarioEngineBase):
                     for i in range(self._num_parallel_clients)
                 ]
                 futures = [
-                    pool.submit(self._run_clients_shard, _round, shard)
+                    pool.submit(self._clients_shard_update_and_test, _round, shard)
                     for shard in shards if shard
                 ]
                 [f.result() for f in futures]
 
-                for _client in clients:
-                    self.synchronize_client(_round, _client)
+                futures = [
+                    pool.submit(self._clients_shard_synchronize, _round, shard)
+                    for shard in shards if shard
+                ]
+                [f.result() for f in futures]
 
                 self.on_communication_round_end(_round)
 
-    def _run_clients_shard(self, _round: int, clients: List[DecAvgClient]):
+    def _clients_shard_update_and_test(self, _round: int, clients: List[DecAvgClient]):
         device = torch.device(self._device)
 
         if device.type == 'cuda':
@@ -218,6 +221,10 @@ class VanillaDecentralizedSynch(DecentralizedScenarioEngineBase):
                 with client_on_device_context(_client, device):
                     _client.update(_round)
                     _client.test(_round, self.test_data)
+
+    def _clients_shard_synchronize(self, _round: int, clients: List[DecAvgClient]):
+        for _client in clients:
+            self.synchronize_client(_round, _client)
 
     def synchronize_client(self, communication_round: int, client: DecAvgClient):
         destinations_idxs = self.get_neighbors(client)
