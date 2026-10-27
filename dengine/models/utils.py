@@ -1,6 +1,5 @@
 from pathlib import Path
 import logging
-from copy import deepcopy
 from collections import defaultdict
 from typing import List, Dict, Sequence, Any, Optional
 from traceback import format_exc
@@ -12,6 +11,10 @@ from pickle import UnpicklingError
 
 from dengine.config import constants
 from dengine.interfaces import ClientInterface
+
+
+def fast_state_dict_deepcopy(d: Dict[str, Tensor]) -> Dict[str, Tensor]:
+    return {k: v.detach().clone() for k, v in d.items()}
 
 
 def _state_dict_device(state_dict: Dict[str, Tensor]):
@@ -63,7 +66,7 @@ def model_wise_weighted_average(L: Sequence[Dict[str, Tensor]], alpha_list: Sequ
     Raises:
         KeyError: If a model is missing a layer present in `L[0]`
     """
-    w_avg: Dict[str, Tensor] = deepcopy(L[0])
+    w_avg: Dict[str, Tensor] = fast_state_dict_deepcopy(L[0])
     for layer in w_avg.keys():
         w_avg[layer] = w_avg[layer].float().cpu() * alpha_list[0]
 
@@ -108,7 +111,7 @@ def unsafe_layer_wise_weighted_average(
             grouped_layers[layer].append(ith_model[layer].float().cpu())
 
     t_custom_layers_alphas = {k: torch.Tensor(v) / sum(v) for k, v in custom_layers_alphas.items()}
-    updated_dict = deepcopy(reference_dict)
+    updated_dict = fast_state_dict_deepcopy(reference_dict)
     for layer_name, weight_list in grouped_layers.items():
         if layer_name in t_custom_layers_alphas:
             layer_alpha = t_custom_layers_alphas[layer_name]
@@ -162,7 +165,7 @@ def unsafe_element_wise_weighted_average(
                 custom_layers_alphas[layer].append(alpha[i])
             grouped_layers[layer].append(ith_model[layer].float().cpu())
 
-    updated_dict = deepcopy(reference_dict)
+    updated_dict = fast_state_dict_deepcopy(reference_dict)
     for layer_name, weight_list in grouped_layers.items():
         stacked_weights = torch.stack(weight_list)
         if layer_name in custom_layers_alphas:
