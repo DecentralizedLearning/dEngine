@@ -181,9 +181,9 @@ class VanillaDecentralizedSynch(DecentralizedScenarioEngineBase):
     def run(self):
         clients = list(self.clients.values())
 
-        for _client in self.clients.values():
-            _client.model.cpu()
-            self.synchronize_client(-1, _client)
+        # for _client in self.clients.values():
+        #     _client.model.cpu()
+        #     self.synchronize_client(-1, _client)
 
         pbar = tqdm(range(self._max_communication_rounds), desc="Communication round")
 
