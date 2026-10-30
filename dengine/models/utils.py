@@ -1,6 +1,5 @@
 from pathlib import Path
 import logging
-from copy import deepcopy
 from collections import defaultdict
 from typing import List, Dict, Sequence, Any, Optional
 from traceback import format_exc
@@ -12,6 +11,14 @@ from pickle import UnpicklingError
 
 from dengine.config import constants
 from dengine.interfaces import ClientInterface
+
+
+def fast_state_dict_deepcopy(d: Dict[str, Tensor]) -> Dict[str, Tensor]:
+    return {k: v.detach().clone() for k, v in d.items()}
+
+
+def _state_dict_device(state_dict: Dict[str, Tensor]):
+    return next(iter(state_dict.values())).device
 
 
 def load_last_checkpoint(clients: Sequence[ClientInterface], checkpoint_dir: Path):
@@ -59,7 +66,7 @@ def model_wise_weighted_average(L: Sequence[Dict[str, Tensor]], alpha_list: Sequ
     Raises:
         KeyError: If a model is missing a layer present in `L[0]`
     """
-    w_avg: Dict[str, Tensor] = deepcopy(L[0])
+    w_avg: Dict[str, Tensor] = fast_state_dict_deepcopy(L[0])
     for layer in w_avg.keys():
         w_avg[layer] = w_avg[layer].float().cpu() * alpha_list[0]
 
@@ -93,6 +100,8 @@ def unsafe_layer_wise_weighted_average(
         A copy of `reference_dict` with the averaged layers replaced
         (averaged tensors are float32 on CPU).
     """
+    device = _state_dict_device(reference_dict)
+
     grouped_layers: Dict[str, List[Tensor]] = defaultdict(list)
     custom_layers_alphas: Dict[str, List[float]] = defaultdict(list)
     for i, ith_model in enumerate(model_state_dicts):
@@ -102,7 +111,7 @@ def unsafe_layer_wise_weighted_average(
             grouped_layers[layer].append(ith_model[layer].float().cpu())
 
     t_custom_layers_alphas = {k: torch.Tensor(v) / sum(v) for k, v in custom_layers_alphas.items()}
-    updated_dict = deepcopy(reference_dict)
+    updated_dict = fast_state_dict_deepcopy(reference_dict)
     for layer_name, weight_list in grouped_layers.items():
         if layer_name in t_custom_layers_alphas:
             layer_alpha = t_custom_layers_alphas[layer_name]
@@ -110,7 +119,7 @@ def unsafe_layer_wise_weighted_average(
             layer_alpha = torch.ones(len(weight_list)) / len(weight_list)
         stacked_weights = torch.stack(weight_list)
         layer_alpha_broadcast = layer_alpha.view(-1, *([1] * (stacked_weights.ndim - 1)))
-        updated_dict[layer_name] = (stacked_weights * layer_alpha_broadcast).sum(dim=0)
+        updated_dict[layer_name] = (stacked_weights * layer_alpha_broadcast).sum(dim=0).to(device)
     return updated_dict
 
 
@@ -127,12 +136,14 @@ def unsafe_element_wise_weighted_average(
     Models may be partial at two levels: a model can be missing whole layers,
     and within a layer, missing entries can be marked as NaN. Each entry is
     averaged only over the models that provide a non-NaN value for it, with
-    the weights renormalized over those models. Layers not present in any
-    model keep their value from `reference_dict`.
+    the weights renormalized over those models. Entries that are NaN in every
+    model that has the layer, and layers not present in any model, keep their
+    value from `reference_dict`.
 
     Args:
         model_state_dicts: State dicts to average. Missing entries are NaN.
-        reference_dict: Full state dict used as the base for the output.
+        reference_dict: Full state dict used as the base for the output. Must
+            contain every layer that appears in `model_state_dicts`.
         alpha: One weight per model. Required; None is not supported yet.
 
     Returns:
@@ -141,9 +152,11 @@ def unsafe_element_wise_weighted_average(
 
     Raises:
         NotImplementedError: If `alpha` is None.
-        AssertionError: If the result contains NaN, e.g. when an entry is
-            NaN in every model that has that layer.
+        KeyError: If a layer in `model_state_dicts` is missing from
+            `reference_dict`.
     """
+    device = _state_dict_device(reference_dict)
+
     grouped_layers: Dict[str, List[Tensor]] = defaultdict(list)
     custom_layers_alphas: Dict[str, List[float]] = defaultdict(list)
     for i, ith_model in enumerate(model_state_dicts):
@@ -152,7 +165,7 @@ def unsafe_element_wise_weighted_average(
                 custom_layers_alphas[layer].append(alpha[i])
             grouped_layers[layer].append(ith_model[layer].float().cpu())
 
-    updated_dict = deepcopy(reference_dict)
+    updated_dict = fast_state_dict_deepcopy(reference_dict)
     for layer_name, weight_list in grouped_layers.items():
         stacked_weights = torch.stack(weight_list)
         if layer_name in custom_layers_alphas:
@@ -166,7 +179,12 @@ def unsafe_element_wise_weighted_average(
         else:
             raise NotImplementedError()
         updated_dict[layer_name] = torch.mul(stacked_weights.nan_to_num(0), layer_alpha).sum(dim=0)
-    assert any([torch.isnan(v).any() for v in updated_dict.values()]) is False
+        # If all models are nan for a layer-element, use the reference dict
+        updated_dict[layer_name] = torch.where(
+            updated_dict[layer_name].isnan().to(device),
+            reference_dict[layer_name],
+            updated_dict[layer_name].to(device)
+        )
     return updated_dict
 
 
