@@ -240,6 +240,11 @@ class VanillaDecentralizedSynch(DecentralizedScenarioEngineBase):
 
 @register_scenario()
 class DecentralizedShallowSyncReference(VanillaDecentralizedSynch):
+    def __init__(self, *args, num_parallel_clients: int = 1, **kwargs):
+        if num_parallel_clients > 1:
+            logging.warning("DecentralizedShallowSyncReference with num_parallel_clients > 1 is likely to have race conditions.")
+        super().__init__(*args, num_parallel_clients=num_parallel_clients, **kwargs)
+
     def synchronize_client(self, communication_round: int, client: DecAvgClient):
         destinations_idxs = self.get_neighbors(client)
         log_client_synchronization(client, communication_round, destinations_idxs)
