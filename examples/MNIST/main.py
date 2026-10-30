@@ -28,7 +28,7 @@ from dengine.scenarios.federated import FederatedClient
 # ..... ..... ..... ..... ..... ..... ..... ..... #
 FEDERATED_CONFIGS_FILES = [
     BUILTINS.CORE.SCENARIOS.FEDERATED,
-    BUILTINS.CORE.GRAPH.STAR_MEDIUM,
+    BUILTINS.CORE.GRAPH.COMPLETE_GRAPH_MEDIUM,
     BUILTINS.CORE.DATASETS.MNIST,
     BUILTINS.CORE.PARTITIONING.IID,
     Path("configs/core.yml")
@@ -72,9 +72,9 @@ DECENTRALIZED_CONFIG_OVERRIDES = {
     # "client.training_engine.arguments.adam_weight_decay": 0.001,
     # "client.training_engine.arguments.scheduler": "cosine",
     # "client.training_engine.arguments.patience": 5,
-    # "client.training_engine.arguments.epochs": 5,
-    # "client.training_engine.arguments.validation_batch_size": 32,
-    # "client.training_engine.arguments.training_batch_size": 32,
+    "client.training_engine.arguments.epochs": 5,
+    "client.training_engine.arguments.validation_batch_size": 512,
+    "client.training_engine.arguments.training_batch_size": 96,
     # "partitioning.arguments.validation_percentage": 0.1,
 }
 
@@ -95,9 +95,9 @@ FEDERATED_CONFIGS_OVERRIDES = {
     # "client.training_engine.arguments.adam_weight_decay": 0.001,
     # "client.training_engine.arguments.scheduler": "cosine",  (default none)
     # "client.training_engine.arguments.patience": 5,
-    # "client.training_engine.arguments.epochs": 5,
-    # "client.training_engine.arguments.validation_batch_size": 32,
-    # "client.training_engine.arguments.training_batch_size": 32,
+    "client.training_engine.arguments.epochs": 5,
+    "client.training_engine.arguments.validation_batch_size": 512,
+    "client.training_engine.arguments.training_batch_size": 96,
     # "partitioning.arguments.validation_percentage": 0.1,
 }
 
