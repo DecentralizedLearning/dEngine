@@ -2,7 +2,7 @@
   {
     "EXPERIMENT_VERSION": "1",
     "target": null,
-    "experiments_directory_root": "/home/samuele.sabella/Desktop/DecentralizedLearning/dEngine/examples/MNIST/logs",
+    "experiments_directory_root": "/home/samuele/DecentralizedLearning/dEngine/examples/MNIST/logs",
     "name": "mnist,Centralized,CNNMnist",
     "seed": 123,
     "dataset": {
@@ -21,9 +21,11 @@
       "postprocessing": null
     },
     "partitioning": {
-      "target": "random_iid_balanced",
+      "target": "zipf_noniid_truncated",
       "arguments": {
-        "validation_percentage": 0.2
+        "validation_percentage": 0.2,
+        "zipf_alpha": 1.6,
+        "minimum_training_samples_per_class": 8
       }
     },
     "graph": {
@@ -70,7 +72,7 @@
   {
     "EXPERIMENT_VERSION": "1",
     "target": null,
-    "experiments_directory_root": "/home/samuele.sabella/Desktop/DecentralizedLearning/dEngine/examples/MNIST/logs",
+    "experiments_directory_root": "/home/samuele/DecentralizedLearning/dEngine/examples/MNIST/logs",
     "name": "mnist,BA,DecAvg,CNNMnist",
     "seed": 123,
     "dataset": {
@@ -89,9 +91,11 @@
       "postprocessing": null
     },
     "partitioning": {
-      "target": "random_iid_balanced",
+      "target": "zipf_noniid_truncated",
       "arguments": {
-        "validation_percentage": 0.2
+        "validation_percentage": 0.2,
+        "zipf_alpha": 1.6,
+        "minimum_training_samples_per_class": 8
       }
     },
     "graph": {
@@ -107,7 +111,8 @@
       "target": "VanillaDecentralizedSynch",
       "arguments": {
         "common_init": true,
-        "max_communication_rounds": 200
+        "max_communication_rounds": 200,
+        "num_parallel_clients": 50
       }
     },
     "client": {
@@ -120,11 +125,11 @@
         "target": "TrainingEngine",
         "arguments": {
           "optimizer": "SGD",
-          "epochs": 5,
+          "epochs": 10,
           "lr": 0.001,
           "sgd_momentum": 0.9,
-          "training_batch_size": 32,
-          "validation_batch_size": 128
+          "training_batch_size": 96,
+          "validation_batch_size": 512
         }
       },
       "local_model": {
@@ -133,10 +138,6 @@
       }
     },
     "callbacks": [
-      {
-        "target": "LossDumpCallback",
-        "arguments": null
-      },
       {
         "target": "ConfusionMatrixDumpOnCommRoundEndCallback",
         "arguments": null
@@ -150,7 +151,7 @@
   {
     "EXPERIMENT_VERSION": "1",
     "target": null,
-    "experiments_directory_root": "/home/samuele.sabella/Desktop/DecentralizedLearning/dEngine/examples/MNIST/logs",
+    "experiments_directory_root": "/home/samuele/DecentralizedLearning/dEngine/examples/MNIST/logs",
     "name": "mnist,ER,DecAvg,CNNMnist",
     "seed": 123,
     "dataset": {
@@ -169,9 +170,11 @@
       "postprocessing": null
     },
     "partitioning": {
-      "target": "random_iid_balanced",
+      "target": "zipf_noniid_truncated",
       "arguments": {
-        "validation_percentage": 0.2
+        "validation_percentage": 0.2,
+        "zipf_alpha": 1.6,
+        "minimum_training_samples_per_class": 8
       }
     },
     "graph": {
@@ -179,7 +182,7 @@
       "arguments": {
         "nx_class": "erdos_renyi_graph",
         "n": 50,
-        "p": 0.2,
+        "p": 0.1,
         "seed": 123
       }
     },
@@ -187,7 +190,8 @@
       "target": "VanillaDecentralizedSynch",
       "arguments": {
         "common_init": true,
-        "max_communication_rounds": 200
+        "max_communication_rounds": 200,
+        "num_parallel_clients": 50
       }
     },
     "client": {
@@ -200,11 +204,11 @@
         "target": "TrainingEngine",
         "arguments": {
           "optimizer": "SGD",
-          "epochs": 5,
+          "epochs": 10,
           "lr": 0.001,
           "sgd_momentum": 0.9,
-          "training_batch_size": 32,
-          "validation_batch_size": 128
+          "training_batch_size": 96,
+          "validation_batch_size": 512
         }
       },
       "local_model": {
@@ -213,10 +217,6 @@
       }
     },
     "callbacks": [
-      {
-        "target": "LossDumpCallback",
-        "arguments": null
-      },
       {
         "target": "ConfusionMatrixDumpOnCommRoundEndCallback",
         "arguments": null
@@ -230,7 +230,7 @@
   {
     "EXPERIMENT_VERSION": "1",
     "target": null,
-    "experiments_directory_root": "/home/samuele.sabella/Desktop/DecentralizedLearning/dEngine/examples/MNIST/logs",
+    "experiments_directory_root": "/home/samuele/DecentralizedLearning/dEngine/examples/MNIST/logs",
     "name": "mnist,FedAvg,CNNMnist",
     "seed": 123,
     "dataset": {
@@ -249,41 +249,41 @@
       "postprocessing": null
     },
     "partitioning": {
-      "target": "random_iid_balanced",
+      "target": "zipf_noniid_truncated",
       "arguments": {
-        "validation_percentage": 0.2
+        "validation_percentage": 0.2,
+        "zipf_alpha": 1.6,
+        "minimum_training_samples_per_class": 8
       }
     },
     "graph": {
       "target": "NXGraph",
       "arguments": {
-        "nx_class": "star_graph",
+        "nx_class": "complete_graph",
         "n": 50
       }
     },
     "scenario": {
       "target": "VanillaFederatedScenario",
       "arguments": {
-        "max_communication_rounds": 20,
+        "max_communication_rounds": 200,
         "use_weighted_avg": true,
-        "common_init": true
+        "common_init": true,
+        "num_parallel_clients": 50
       }
     },
     "client": {
       "target": "FederatedClient",
-      "arguments": {
-        "include_myself": true,
-        "use_weighted_avg": true
-      },
+      "arguments": null,
       "training_engine": {
         "target": "TrainingEngine",
         "arguments": {
           "optimizer": "SGD",
-          "epochs": 5,
+          "epochs": 10,
           "lr": 0.001,
           "sgd_momentum": 0.9,
-          "training_batch_size": 32,
-          "validation_batch_size": 128
+          "training_batch_size": 96,
+          "validation_batch_size": 512
         }
       },
       "local_model": {
@@ -292,333 +292,6 @@
       }
     },
     "callbacks": [
-      {
-        "target": "LossDumpCallback",
-        "arguments": null
-      },
-      {
-        "target": "ConfusionMatrixDumpOnCommRoundEndCallback",
-        "arguments": null
-      },
-      {
-        "target": "ConfusionMatrixDumpOnAggregationEnd",
-        "arguments": null
-      }
-    ]
-  },
-  {
-    "EXPERIMENT_VERSION": "1",
-    "target": null,
-    "experiments_directory_root": "/home/samuele.sabella/Desktop/DecentralizedLearning/dEngine/examples/MNIST/logs",
-    "name": "mnist,Centralized,WideResNetClassifier",
-    "seed": 123,
-    "dataset": {
-      "train": {
-        "target": "mnist",
-        "arguments": {
-          "train": true
-        }
-      },
-      "test": {
-        "target": "mnist",
-        "arguments": {
-          "train": false
-        }
-      },
-      "postprocessing": null
-    },
-    "partitioning": {
-      "target": "random_iid_balanced",
-      "arguments": {
-        "validation_percentage": 0.2
-      }
-    },
-    "graph": {
-      "target": "NXGraph",
-      "arguments": {
-        "nx_class": "complete_graph",
-        "n": 1
-      }
-    },
-    "scenario": {
-      "target": "CentralizedScenarioEngine",
-      "arguments": null
-    },
-    "client": {
-      "target": "CentralizedClient",
-      "arguments": null,
-      "training_engine": {
-        "target": "TrainingEngine",
-        "arguments": {
-          "optimizer": "SGD",
-          "epochs": 5,
-          "lr": 0.001,
-          "sgd_momentum": 0.9,
-          "training_batch_size": 32,
-          "validation_batch_size": 128
-        }
-      },
-      "local_model": {
-        "target": "WideResNetClassifier",
-        "arguments": {
-          "depth": 10,
-          "dropout": 0.3,
-          "widen_factor": 5
-        }
-      }
-    },
-    "callbacks": [
-      {
-        "target": "LossDumpCallback",
-        "arguments": null
-      },
-      {
-        "target": "ConfusionMatrixDumpOnEpochEndCallback",
-        "arguments": null
-      }
-    ]
-  },
-  {
-    "EXPERIMENT_VERSION": "1",
-    "target": null,
-    "experiments_directory_root": "/home/samuele.sabella/Desktop/DecentralizedLearning/dEngine/examples/MNIST/logs",
-    "name": "mnist,BA,DecAvg,WideResNetClassifier",
-    "seed": 123,
-    "dataset": {
-      "train": {
-        "target": "mnist",
-        "arguments": {
-          "train": true
-        }
-      },
-      "test": {
-        "target": "mnist",
-        "arguments": {
-          "train": false
-        }
-      },
-      "postprocessing": null
-    },
-    "partitioning": {
-      "target": "random_iid_balanced",
-      "arguments": {
-        "validation_percentage": 0.2
-      }
-    },
-    "graph": {
-      "target": "NXGraph",
-      "arguments": {
-        "nx_class": "barabasi_albert_graph",
-        "n": 50,
-        "m": 1,
-        "seed": 123
-      }
-    },
-    "scenario": {
-      "target": "VanillaDecentralizedSynch",
-      "arguments": {
-        "common_init": true,
-        "max_communication_rounds": 200
-      }
-    },
-    "client": {
-      "target": "DecAvgClient",
-      "arguments": {
-        "include_myself": true,
-        "use_weighted_avg": true
-      },
-      "training_engine": {
-        "target": "TrainingEngine",
-        "arguments": {
-          "optimizer": "SGD",
-          "epochs": 5,
-          "lr": 0.001,
-          "sgd_momentum": 0.9,
-          "training_batch_size": 32,
-          "validation_batch_size": 128
-        }
-      },
-      "local_model": {
-        "target": "WideResNetClassifier",
-        "arguments": {
-          "depth": 10,
-          "dropout": 0.3,
-          "widen_factor": 5
-        }
-      }
-    },
-    "callbacks": [
-      {
-        "target": "LossDumpCallback",
-        "arguments": null
-      },
-      {
-        "target": "ConfusionMatrixDumpOnCommRoundEndCallback",
-        "arguments": null
-      },
-      {
-        "target": "ConfusionMatrixDumpOnAggregationEnd",
-        "arguments": null
-      }
-    ]
-  },
-  {
-    "EXPERIMENT_VERSION": "1",
-    "target": null,
-    "experiments_directory_root": "/home/samuele.sabella/Desktop/DecentralizedLearning/dEngine/examples/MNIST/logs",
-    "name": "mnist,ER,DecAvg,WideResNetClassifier",
-    "seed": 123,
-    "dataset": {
-      "train": {
-        "target": "mnist",
-        "arguments": {
-          "train": true
-        }
-      },
-      "test": {
-        "target": "mnist",
-        "arguments": {
-          "train": false
-        }
-      },
-      "postprocessing": null
-    },
-    "partitioning": {
-      "target": "random_iid_balanced",
-      "arguments": {
-        "validation_percentage": 0.2
-      }
-    },
-    "graph": {
-      "target": "NXGraph",
-      "arguments": {
-        "nx_class": "erdos_renyi_graph",
-        "n": 50,
-        "p": 0.2,
-        "seed": 123
-      }
-    },
-    "scenario": {
-      "target": "VanillaDecentralizedSynch",
-      "arguments": {
-        "common_init": true,
-        "max_communication_rounds": 200
-      }
-    },
-    "client": {
-      "target": "DecAvgClient",
-      "arguments": {
-        "include_myself": true,
-        "use_weighted_avg": true
-      },
-      "training_engine": {
-        "target": "TrainingEngine",
-        "arguments": {
-          "optimizer": "SGD",
-          "epochs": 5,
-          "lr": 0.001,
-          "sgd_momentum": 0.9,
-          "training_batch_size": 32,
-          "validation_batch_size": 128
-        }
-      },
-      "local_model": {
-        "target": "WideResNetClassifier",
-        "arguments": {
-          "depth": 10,
-          "dropout": 0.3,
-          "widen_factor": 5
-        }
-      }
-    },
-    "callbacks": [
-      {
-        "target": "LossDumpCallback",
-        "arguments": null
-      },
-      {
-        "target": "ConfusionMatrixDumpOnCommRoundEndCallback",
-        "arguments": null
-      },
-      {
-        "target": "ConfusionMatrixDumpOnAggregationEnd",
-        "arguments": null
-      }
-    ]
-  },
-  {
-    "EXPERIMENT_VERSION": "1",
-    "target": null,
-    "experiments_directory_root": "/home/samuele.sabella/Desktop/DecentralizedLearning/dEngine/examples/MNIST/logs",
-    "name": "mnist,FedAvg,WideResNetClassifier",
-    "seed": 123,
-    "dataset": {
-      "train": {
-        "target": "mnist",
-        "arguments": {
-          "train": true
-        }
-      },
-      "test": {
-        "target": "mnist",
-        "arguments": {
-          "train": false
-        }
-      },
-      "postprocessing": null
-    },
-    "partitioning": {
-      "target": "random_iid_balanced",
-      "arguments": {
-        "validation_percentage": 0.2
-      }
-    },
-    "graph": {
-      "target": "NXGraph",
-      "arguments": {
-        "nx_class": "star_graph",
-        "n": 50
-      }
-    },
-    "scenario": {
-      "target": "VanillaFederatedScenario",
-      "arguments": {
-        "max_communication_rounds": 20,
-        "use_weighted_avg": true,
-        "common_init": true
-      }
-    },
-    "client": {
-      "target": "FederatedClient",
-      "arguments": {
-        "include_myself": true,
-        "use_weighted_avg": true
-      },
-      "training_engine": {
-        "target": "TrainingEngine",
-        "arguments": {
-          "optimizer": "SGD",
-          "epochs": 5,
-          "lr": 0.001,
-          "sgd_momentum": 0.9,
-          "training_batch_size": 32,
-          "validation_batch_size": 128
-        }
-      },
-      "local_model": {
-        "target": "WideResNetClassifier",
-        "arguments": {
-          "depth": 10,
-          "dropout": 0.3,
-          "widen_factor": 5
-        }
-      }
-    },
-    "callbacks": [
-      {
-        "target": "LossDumpCallback",
-        "arguments": null
-      },
       {
         "target": "ConfusionMatrixDumpOnCommRoundEndCallback",
         "arguments": null

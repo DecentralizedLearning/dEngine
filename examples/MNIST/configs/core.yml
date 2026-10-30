@@ -1,4 +1,4 @@
 callbacks:
-  - target: LossDumpCallback
+  # - target: LossDumpCallback
   - target: ConfusionMatrixDumpOnCommRoundEndCallback
   - target: ConfusionMatrixDumpOnAggregationEnd

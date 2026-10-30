@@ -1,0 +1,4 @@
+patterns:
+    ".*Centralized.*": "#000000"
+    ".*DecAvg.*": "#f06292"
+    ".*FedAvg.*": "#ba68c8"
