@@ -1,0 +1,4 @@
+patterns:
+    "mnist,ER,DecAvg,CNNMnist,per_label_samples=29": "#f06292"
+    "mnist,ER,DecAvg,CNNMnist,per_label_samples=40": "#ba68c8"
+    "mnist,ER,DecAvg,CNNMnist,per_label_samples=80": "#5c6bc0"
