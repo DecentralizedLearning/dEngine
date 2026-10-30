@@ -7,6 +7,7 @@ import numpy as np
 from torch import Tensor
 from npy_append_array import NpyAppendArray
 
+from dengine.interfaces import ModuleBase
 from dengine.config.constants import CHECKPOINT_DIR_NAME, METRICS_DIR_NAME
 from dengine.utils.utils import get_output_in_production
 from dengine.utils.confusion_matrix import confusion_matrix_from_model_output
@@ -150,24 +151,19 @@ class ConfusionMatrixDumpOnCommRoundEndCallback(ConfusionMatrixDumpBase):
     def local_training_end(
         self,
         *args,
-        Y_hat_train: Tensor,
+        model: ModuleBase,
         training_data: Subset,
         Y_hat_valid: Tensor,
         validation_data: Subset,
         **kwargs
     ):
-        # No improvment since last epoch, copy-pasting last known value
-        if not torch.is_tensor(Y_hat_train) and np.isnan(Y_hat_train):
-            if self._last_Y_hat_train is None:
-                self._last_Y_hat_train = get_output_in_production(self.client.model, training_data, None, self.batch_size)
-            Y_hat_train = self._last_Y_hat_train
-        else:
-            self._last_Y_hat_train = Y_hat_train
+        # During training, batches are shuffled and the model is in training mode (e.g. dropout is active).
+        # We need to recompute the output over the training set.
+        Y_hat_train = get_output_in_production(model, training_data, None, self.batch_size)
 
+        # No improvment since last epoch, copy-pasting last known value
         if not torch.is_tensor(Y_hat_valid) and np.isnan(Y_hat_valid):
-            if self._last_Y_hat_valid is None:
-                self._last_Y_hat_valid = get_output_in_production(self.client.model, validation_data, None, self.batch_size)
-            Y_hat_valid = self._last_Y_hat_valid
+            Y_hat_valid = get_output_in_production(model, validation_data, None, self.batch_size)
         else:
             self._last_Y_hat_valid = Y_hat_valid
 
