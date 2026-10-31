@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Sequence, Literal
+from typing import Sequence, Literal, List
 from uuid import UUID
 from dataclasses import dataclass
 
@@ -47,7 +47,7 @@ class EventHandlerDescriptor:
             return False
 
         if self.timestamp:
-            return event.timestamp == self.timestamp
+            return event.timestamp.timestamp() == self.timestamp
 
         if self.event_tag and self.event_tag != event.tag:
             return False
@@ -71,33 +71,40 @@ class Synchronization(Event):
 
 @dataclass
 class SynchronizationDescriptor(EventHandlerDescriptor):
-    src: UUID | Sequence[UUID] | None
-    destinations: UUID | Sequence[UUID] | None
+    src: str | List[str] | None
+    destinations: str | List[str] | None
 
     def match(self, event: Synchronization) -> bool:
         if not super().match(event):
             return False
 
+        src_is_matching = False
         if self.src:
             if (
-                isinstance(self.src, Sequence)
+                isinstance(self.src, List)
                 and event.src in self.src
             ):
-                return True
+                src_is_matching = True
             elif event.src == self.src:
-                return True
-            return False
+                src_is_matching = True
 
-        if self.destinations:
+        dst_is_matching = False
+        if self.destinations and event.destinations:
             if (
-                isinstance(self.destinations, Sequence)
-                and event.destinations in self.destinations
+                isinstance(self.destinations, List)
+                and any([event_dst in self.destinations for event_dst in event.destinations])
             ):
-                return True
-            elif event.destinations == self.destinations:
-                return True
-            return False
-        return True
+                dst_is_matching = True
+            elif (
+                isinstance(self.destinations, str)
+                and self.destinations in event.destinations
+            ):
+                dst_is_matching = True
+
+        return (
+            (self.src is None or src_is_matching)
+            and (self.destinations is None or dst_is_matching)
+        )
 
 
 class LocalTraining(Event):
@@ -107,7 +114,7 @@ class LocalTraining(Event):
 
 @dataclass
 class LocalTrainingDescriptor(EventHandlerDescriptor):
-    client: UUID | Sequence[UUID] | None
+    client: str | List[str] | None
 
     def match(self, event: LocalTraining) -> bool:
         if not super().match(event):
@@ -117,7 +124,7 @@ class LocalTrainingDescriptor(EventHandlerDescriptor):
             return True
 
         if (
-            isinstance(self.client, Sequence)
+            isinstance(self.client, List)
             and event.client in self.client
         ):
             return True

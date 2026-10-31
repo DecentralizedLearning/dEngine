@@ -249,8 +249,8 @@ class ScenarioEventEngine(AbstractScenarioEngine[GenericClient]):
         stage: Literal["start", "end"],
         timestamp: float | None = None,
         uuids: UUID | Sequence[UUID] | None = None,
-        src: UUID | Sequence[UUID] | None = None,
-        destination: UUID | Sequence[UUID] | None = None,
+        src: str | List[str] | None = None,
+        destination: str | List[str] | None = None,
     ):
         descriptor = SynchronizationDescriptor(
             event_tag=e.Synchronization.repr(),
@@ -267,7 +267,7 @@ class ScenarioEventEngine(AbstractScenarioEngine[GenericClient]):
         stage: Literal["start", "end"],
         timestamp: float | None = None,
         uuids: UUID | Sequence[UUID] | None = None,
-        client: UUID | Sequence[UUID] | None = None,
+        client: str | List[str] | None = None,
     ):
         descriptor = LocalTrainingDescriptor(
             event_tag=e.LocalTraining.repr(),
@@ -284,7 +284,7 @@ class ScenarioEventEngine(AbstractScenarioEngine[GenericClient]):
         stage: Literal["start", "end"] = "start",
         timestamp: float | None = None,
         uuids: UUID | Sequence[UUID] | None = None,
-        client: UUID | Sequence[UUID] | None = None,
+        client: str | List[str] | None = None,
     ):
         descriptor = LocalTrainingDescriptor(
             event_tag=tag,

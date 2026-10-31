@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 
 import torch
 import numpy as np
@@ -14,10 +14,10 @@ def confusion_matrix_from_model_output(
     Y_hat: Tensor,
     dataset: SupervisedDataset,
     idxs: Optional[Tensor] = None,
-    num_classes: Optional[int] = None
+    labels: Optional[List[int]] = None
 ) -> np.ndarray:
-    if num_classes is None:
-        num_classes = len(torch.unique(dataset.targets))
+    if labels is None:
+        labels = torch.unique(dataset.targets)
 
     if idxs is None:
         Y_ground_truth = dataset.targets
@@ -29,6 +29,6 @@ def confusion_matrix_from_model_output(
     conf_matrix = confusion_matrix(
         Y_ground_truth,
         Y_prediction,
-        labels=range(num_classes)
+        labels=labels
     )
     return np.expand_dims(conf_matrix, axis=0)

@@ -7,6 +7,7 @@ import numpy as np
 from torch import Tensor
 from npy_append_array import NpyAppendArray
 
+from dengine.interfaces import ModuleBase
 from dengine.config.constants import CHECKPOINT_DIR_NAME, METRICS_DIR_NAME
 from dengine.utils.utils import get_output_in_production
 from dengine.utils.confusion_matrix import confusion_matrix_from_model_output
@@ -112,7 +113,7 @@ class ConfusionMatrixDumpBase(PeriodicCallback):
             raise ValueError("Neither batch_size or `client > training_engine > arguments` was found.")
         self.batch_size = batch_size
 
-        self.num_classes = len(self.test_data.unique_targets)
+        self._test_labels = self.test_data.unique_targets.tolist()
 
 
 @register_callback()
@@ -121,7 +122,7 @@ class ConfusionMatrixDumpOnCommRoundEndCallback(ConfusionMatrixDumpBase):
         super().__init__(*args, **kwargs)
         output_path_root = self.experiment_configuration.output_directory
         self._outfolder = output_path_root / f'{METRICS_DIR_NAME}/{self.client.UUID}'
-        self._num_classes = len(self.test_data.unique_targets)
+        self._test_labels = self.test_data.unique_targets.tolist()
 
         self._tr_outfile = self._outfolder / 'confusion_matrix_tr.npy'
         self._tr_outfile.parent.mkdir(parents=True, exist_ok=True)
@@ -142,7 +143,7 @@ class ConfusionMatrixDumpOnCommRoundEndCallback(ConfusionMatrixDumpBase):
         current_time: float,
         output: Dict[Literal["output", "loss"], Tensor],
     ):
-        test_conf_matrix = confusion_matrix_from_model_output(output['output'], self.test_data, None, self._num_classes)
+        test_conf_matrix = confusion_matrix_from_model_output(output['output'], self.test_data, None, self._test_labels)
         with NpyAppendArray(self._test_outfile) as f:
             f.append(test_conf_matrix)
         logging.info(f'Appended test confusion matrix to: {self._test_outfile}')
@@ -150,33 +151,28 @@ class ConfusionMatrixDumpOnCommRoundEndCallback(ConfusionMatrixDumpBase):
     def local_training_end(
         self,
         *args,
-        Y_hat_train: Tensor,
+        model: ModuleBase,
         training_data: Subset,
         Y_hat_valid: Tensor,
         validation_data: Subset,
         **kwargs
     ):
-        # No improvment since last epoch, copy-pasting last known value
-        if not torch.is_tensor(Y_hat_train) and np.isnan(Y_hat_train):
-            if self._last_Y_hat_train is None:
-                self._last_Y_hat_train = get_output_in_production(self.client.model, training_data, None, self.batch_size)
-            Y_hat_train = self._last_Y_hat_train
-        else:
-            self._last_Y_hat_train = Y_hat_train
+        # During training, batches are shuffled and the model is in training mode (e.g. dropout is active).
+        # We need to recompute the output over the training set.
+        Y_hat_train = get_output_in_production(model, training_data, None, self.batch_size)
 
+        # No improvment since last epoch, copy-pasting last known value
         if not torch.is_tensor(Y_hat_valid) and np.isnan(Y_hat_valid):
-            if self._last_Y_hat_valid is None:
-                self._last_Y_hat_valid = get_output_in_production(self.client.model, validation_data, None, self.batch_size)
-            Y_hat_valid = self._last_Y_hat_valid
+            Y_hat_valid = get_output_in_production(model, validation_data, None, self.batch_size)
         else:
             self._last_Y_hat_valid = Y_hat_valid
 
-        tr_conf_matrix = confusion_matrix_from_model_output(Y_hat_train, training_data.dataset, training_data.indices, self._num_classes)  # type: ignore
+        tr_conf_matrix = confusion_matrix_from_model_output(Y_hat_train, training_data.dataset, training_data.indices, self._test_labels)  # type: ignore
         with NpyAppendArray(self._tr_outfile) as tr_out_file_array:
             tr_out_file_array.append(tr_conf_matrix)
         logging.info(f'Appended train confusion matrix to: {self._tr_outfile}')
 
-        vl_conf_matrix = confusion_matrix_from_model_output(Y_hat_valid, validation_data.dataset, validation_data.indices, self._num_classes)  # type: ignore
+        vl_conf_matrix = confusion_matrix_from_model_output(Y_hat_valid, validation_data.dataset, validation_data.indices, self._test_labels)  # type: ignore
         with NpyAppendArray(self._valid_outfile) as valid_out_file_array:
             valid_out_file_array.append(vl_conf_matrix)
         logging.info(f'Appended validation confusion matrix to: {self._valid_outfile}')
@@ -193,7 +189,7 @@ class ConfusionMatrixDumpOnAggregationEnd(ConfusionMatrixDumpBase):
 
     def aggregation_end(self, current_time: float):
         Y_hat = get_output_in_production(self.client.model, self.test_data, None, self.batch_size)
-        test_conf_matrix = confusion_matrix_from_model_output(Y_hat, self.test_data, None, self.num_classes)
+        test_conf_matrix = confusion_matrix_from_model_output(Y_hat, self.test_data, None, self._test_labels)
         with NpyAppendArray(self._test_outfile) as f:
             f.append(test_conf_matrix)
         logging.info(f'Appended test confusion matrix after agg and before local train to: {self._test_outfile}')
@@ -230,13 +226,13 @@ class ConfusionMatrixDumpOnEpochEndCallback(ConfusionMatrixDumpBase):
         else:
             self._last_Y_hat_train = Y_hat_train
 
-        tr_conf_matrix = confusion_matrix_from_model_output(Y_hat_train, training_data.dataset, training_data.indices, self.num_classes)  # type: ignore
+        tr_conf_matrix = confusion_matrix_from_model_output(Y_hat_train, training_data.dataset, training_data.indices, self._test_labels)  # type: ignore
         with NpyAppendArray(self._tr_outfile) as tr_out_file_array:
             tr_out_file_array.append(tr_conf_matrix)
         logging.info(f'Appended train confusion matrix to: {self._tr_outfile}')
 
         Y_hat_test = get_output_in_production(self.client.model, self.test_data, None, self.batch_size)
-        test_conf_matrix = confusion_matrix_from_model_output(Y_hat_test, self.test_data, None, self.num_classes)
+        test_conf_matrix = confusion_matrix_from_model_output(Y_hat_test, self.test_data, None, self._test_labels)
         with NpyAppendArray(self._test_outfile) as f:
             f.append(test_conf_matrix)
         logging.info(f'Appended test confusion matrix to: {self._test_outfile}')
@@ -248,7 +244,7 @@ class ConfusionMatrixDumpOnTestInferenceEnd(PeriodicCallback):
         super().__init__(*args, **kwargs)
         output_path_root = self.experiment_configuration.output_directory
         self._outfolder = output_path_root / f'{METRICS_DIR_NAME}/{self.client.UUID}'
-        self._num_classes = len(self.test_data.unique_targets)
+        self._test_labels = self.test_data.unique_targets.tolist()
 
         self._test_outfile = self._outfolder / 'confusion_matrix_test.npy'
         self._time_outfile = self._outfolder / '.confusion_matrix_test.time.npy'
@@ -259,7 +255,7 @@ class ConfusionMatrixDumpOnTestInferenceEnd(PeriodicCallback):
         current_time: float,
         output: Dict[Literal["output", "loss"], Tensor],
     ):
-        test_conf_matrix = confusion_matrix_from_model_output(output['output'], self.test_data, None, self._num_classes)
+        test_conf_matrix = confusion_matrix_from_model_output(output['output'], self.test_data, None, self._test_labels)
         with NpyAppendArray(self._test_outfile) as f:
             f.append(test_conf_matrix)
         with NpyAppendArray(self._time_outfile) as f:
