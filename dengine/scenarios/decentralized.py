@@ -240,6 +240,11 @@ class VanillaDecentralizedSynch(DecentralizedScenarioEngineBase):
 
 @register_scenario()
 class DecentralizedShallowSyncReference(VanillaDecentralizedSynch):
+    def __init__(self, *args, num_parallel_clients: int = 1, **kwargs):
+        if num_parallel_clients > 1:
+            logging.warning("DecentralizedShallowSyncReference with num_parallel_clients > 1 is likely to have race conditions.")
+        super().__init__(*args, num_parallel_clients=num_parallel_clients, **kwargs)
+
     def synchronize_client(self, communication_round: int, client: DecAvgClient):
         destinations_idxs = self.get_neighbors(client)
         log_client_synchronization(client, communication_round, destinations_idxs)
@@ -251,7 +256,6 @@ class DecentralizedShallowSyncReference(VanillaDecentralizedSynch):
             )
 
 
-@register_client()
 class GossipClient(AbstractClient[VanillaDecentralizedMessage]):
     r"""Implementation of the more classic Gossip learning algorithm for distributed averaging usually found in literature (e.g. [1])
 
@@ -279,6 +283,8 @@ class GossipClient(AbstractClient[VanillaDecentralizedMessage]):
         [1] Xiao, Lin, and Stephen Boyd. "Fast linear iterations for distributed averaging." Systems & Control Letters 53.1 (2004): 65-78.
         [2] Sun, Tao, Dongsheng Li, and Bao Wang. "Decentralized federated averaging." IEEE Transactions on Pattern Analysis and Machine Intelligence 45.4 (2022): 4289-4301.
         [3] Koloskova, Anastasia, Sebastian Stich, and Martin Jaggi. "Decentralized stochastic optimization and gossip algorithms with compressed communication." International conference on machine learning. PMLR, 2019.
+
+    NOTE: experimental and not tested, do not use.
     """
     def __init__(
         self,
@@ -288,6 +294,7 @@ class GossipClient(AbstractClient[VanillaDecentralizedMessage]):
     ):
         super().__init__(*args, **kwargs)
         self._gamma = gamma
+        raise NotImplementedError()
 
     @torch.no_grad()
     def aggregation(self, messages: List[VanillaDecentralizedMessage]):

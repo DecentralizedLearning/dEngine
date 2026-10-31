@@ -13,7 +13,7 @@ This example compares centralized, federated and decentralized training on MNIST
 
 Each scenario is run with two models: `CNNMnist` and `WideResNetClassifier` (depth 10, widen factor 5, dropout 0.3).
 
-All experiments use an IID balanced partitioning of MNIST (20% validation split) and share the callbacks in [`configs/core.yml`](configs/core.yml) (loss and confusion-matrix dumps). The centralized run uses [`configs/centralized_callbacks.yml`](configs/centralized_callbacks.yml) instead, which dumps the confusion matrix at the end of every epoch.
+All experiments use an NON-IID (zipf) partitioning of MNIST (20% validation split) and share the callbacks in [`configs/core.yml`](configs/core.yml). The centralized run uses [`configs/centralized_callbacks.yml`](configs/centralized_callbacks.yml) instead.
 
 Experiment names follow the pattern `dataset,[topology,]algorithm,model`, e.g. `mnist,BA,DecAvg,CNNMnist`.
 
@@ -116,3 +116,20 @@ DECENTRALIZED_CONFIG_OVERRIDES = {
 Run `--sanity_check` again afterwards and inspect `experiments_configs.json` to confirm the resolved values.
 
 The [notebook](dEngine-MNIST.ipynb) walks through the same example interactively.
+
+## Experiments
+
+![Test accuracy of centralized, federated and decentralized training on MNIST](assets/experiments_comparison_plot.png)
+
+The plot compares centralized training, FedAvg, and DecAvg on two topologies (Barabási–Albert and Erdős–Rényi), all using the `CNNMnist` model on non-IID MNIST. To reproduce it, run:
+
+```bash
+PYTHON_GIL=0 python main.py \
+    --seed 123 \
+    --output_directory logs/ \
+    --num_parallel_clients 50 \
+    --concurrent_runs 4 \
+    --experiment_name_filter ".*(BA|ER|FedAvg|Centralized).*CNNMnist.*"
+```
+
+To plot the results, use the *Comparison plot* in the [notebooks repository](https://github.com/DecentralizedLearning/notebooks).

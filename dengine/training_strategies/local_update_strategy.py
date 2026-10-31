@@ -241,6 +241,7 @@ class EarlyStoppingBase(LocalTrainingEngineInterface):
         )
         self.callback.on_local_training_end(
             current_time,
+            model=best_performing_net,
             training_data=self._training_data,
             validation_data=self._validation_data,
             Y_hat_train=best_Y_hat_train,
@@ -368,7 +369,8 @@ class EngineWithoutEarlyStopping(TrainingEngine):
             range(self._local_epochs),
             ascii=True,
             leave=False,
-            total=self._local_epochs
+            total=self._local_epochs,
+            disable=not self.verbose
         )
 
         for current_epoch in epoch_pbar:
@@ -381,7 +383,8 @@ class EngineWithoutEarlyStopping(TrainingEngine):
                 batch_iter,
                 ascii=True,
                 leave=False,
-                total=(total_samples // self._training_batch_size)
+                total=(total_samples // self._training_batch_size),
+                disable=not self.verbose
             )
 
             cumulated_loss = 0
@@ -409,7 +412,9 @@ class EngineWithoutEarlyStopping(TrainingEngine):
         )
         self.callback.on_local_training_end(
             current_time,
+            model=model,
             training_data=self._training_data,
+            Y_hat_valid=np.nan,
             validation_data=self._validation_data,
             training_loss=epoch_loss,
         )

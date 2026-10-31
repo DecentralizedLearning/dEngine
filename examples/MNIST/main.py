@@ -30,27 +30,27 @@ FEDERATED_CONFIGS_FILES = [
     BUILTINS.CORE.SCENARIOS.FEDERATED,
     BUILTINS.CORE.GRAPH.COMPLETE_GRAPH_MEDIUM,
     BUILTINS.CORE.DATASETS.MNIST,
-    BUILTINS.CORE.PARTITIONING.IID,
+    BUILTINS.CORE.PARTITIONING.NONIID,
     Path("configs/core.yml")
 ]
 DECENTRALIZED_BA_CONFIGS_FILES = [
     BUILTINS.CORE.SCENARIOS.DECENTRALIZED_HOMOGENOUS,
     BUILTINS.CORE.GRAPH.BA_MEDIUM,
     BUILTINS.CORE.DATASETS.MNIST,
-    BUILTINS.CORE.PARTITIONING.IID,
+    BUILTINS.CORE.PARTITIONING.NONIID,
     Path("configs/core.yml")
 ]
 DECENTRALIZED_ER_CONFIGS_FILES = [
     BUILTINS.CORE.SCENARIOS.DECENTRALIZED_HOMOGENOUS,
     BUILTINS.CORE.GRAPH.ER_MEDIUM,
     BUILTINS.CORE.DATASETS.MNIST,
-    BUILTINS.CORE.PARTITIONING.IID,
+    BUILTINS.CORE.PARTITIONING.NONIID,
     Path("configs/core.yml")
 ]
 CENTRALIZED_CONFIGS_FILES = [
     BUILTINS.CORE.SCENARIOS.CENTRALIZED,
     BUILTINS.CORE.DATASETS.MNIST,
-    BUILTINS.CORE.PARTITIONING.IID,
+    BUILTINS.CORE.PARTITIONING.NONIID,
     Path("configs/core.yml"),
     Path("configs/centralized_callbacks.yml")
 ]
@@ -60,9 +60,9 @@ CENTRALIZED_CONFIG_OVERRIDES = {
     # "client.training_engine.arguments.epochs": 1500,
 }
 DECENTRALIZED_CONFIG_OVERRIDES = {
-    "client.target": DecAvgClient.__name__,
+    "client.target": DecAvgClient,
     # Aggregation and Scenario ..... ..... #
-    "scenario.arguments.common_init": True,
+    # "scenario.arguments.common_init": True,
     "client.arguments.include_myself": True,
     "client.arguments.use_weighted_avg": True,
     # "scenario.arguments.max_communication_rounds": 200,
@@ -72,7 +72,7 @@ DECENTRALIZED_CONFIG_OVERRIDES = {
     # "client.training_engine.arguments.adam_weight_decay": 0.001,
     # "client.training_engine.arguments.scheduler": "cosine",
     # "client.training_engine.arguments.patience": 5,
-    "client.training_engine.arguments.epochs": 5,
+    "client.training_engine.arguments.epochs": 10,
     "client.training_engine.arguments.validation_batch_size": 512,
     "client.training_engine.arguments.training_batch_size": 96,
     # "partitioning.arguments.validation_percentage": 0.1,
@@ -82,11 +82,11 @@ FEDERATED_CONFIGS_OVERRIDES = {
     # ┌──────────────────────────────────┐
     # │  Aggregation and Scenario        │
     # └──────────────────────────────────┘
-    "client.local_model.target": CNNMnist.__name__,
-    "client.target": FederatedClient.__name__,
-    "scenario.arguments.common_init": True,
+    "client.local_model.target": CNNMnist,
+    "client.target": FederatedClient,
+    # "scenario.arguments.common_init": True,
     "scenario.arguments.use_weighted_avg": True,
-    "scenario.arguments.max_communication_rounds": 20,  # (default 200)
+    # "scenario.arguments.max_communication_rounds": 200,  # (default 200)
     # ┌──────────────────────────────────┐
     # │  Training Engine                 │
     # └──────────────────────────────────┘
@@ -95,7 +95,7 @@ FEDERATED_CONFIGS_OVERRIDES = {
     # "client.training_engine.arguments.adam_weight_decay": 0.001,
     # "client.training_engine.arguments.scheduler": "cosine",  (default none)
     # "client.training_engine.arguments.patience": 5,
-    "client.training_engine.arguments.epochs": 5,
+    "client.training_engine.arguments.epochs": 10,
     "client.training_engine.arguments.validation_batch_size": 512,
     "client.training_engine.arguments.training_batch_size": 96,
     # "partitioning.arguments.validation_percentage": 0.1,
@@ -104,9 +104,9 @@ FEDERATED_CONFIGS_OVERRIDES = {
 # ..... ..... ..... ..... ..... ..... ..... ..... #
 # ARCHITECTURE
 # ..... ..... ..... ..... ..... ..... ..... ..... #
-CNN_MNIST = {"client.local_model.target": CNNMnist.__name__}
+CNN_MNIST = {"client.local_model.target": CNNMnist}
 WIDE_RESNET = {
-    "client.local_model.target": WideResNetClassifier.__name__,
+    "client.local_model.target": WideResNetClassifier,
     "client.local_model.arguments.depth": 10,
     "client.local_model.arguments.dropout": 0.3,
     "client.local_model.arguments.widen_factor": 5,
@@ -171,6 +171,7 @@ def load_decentralized(
         files=[*config_files, *DECENTRALIZED_ER_CONFIGS_FILES],
         overrides=convert_to_nested_dict({
             "graph.arguments.seed": simulation_args.seed,
+            "graph.arguments.p": 0.1,
             **debug_argument,
             **DECENTRALIZED_CONFIG_OVERRIDES,
             **additional_config_overrides
