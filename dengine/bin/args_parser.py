@@ -1,4 +1,4 @@
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Any
 from omegaconf import OmegaConf
 from pathlib import Path
 from random import randint
@@ -31,7 +31,7 @@ class SimulationArguments:
 
 def cli_argument_parser(
     parser: ArgumentParser | None = None
-) -> Tuple[SimulationArguments, Dict[str, str]]:
+) -> Tuple[SimulationArguments, Dict[str, Any]]:
     if parser:
         parser_handler = parser.add_argument_group("Simulator Options")
     else:
