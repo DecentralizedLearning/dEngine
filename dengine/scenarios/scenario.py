@@ -217,16 +217,18 @@ class AbstractClient(ClientInterface[GenericMessage]):
         result = cls.__new__(cls)
         memo[id(self)] = result
         for k, v in self.__dict__.items():
-            if k not in ("_scenario", "_callback", "_local_strategy", "_msg_buffer"):
-                setattr(result, k, deepcopy(v, memo))
-            else:
+            if k in ("_scenario", "_callback", "_local_strategy", "_msg_buffer"):
                 setattr(result, k, None)
+            else:
+                setattr(result, k, deepcopy(v, memo))
         return result
 
     def aggregation(self, messages: List[GenericMessage]):
         raise NotImplementedError()
 
     def _log_synchronized_messages(self, messages: List[GenericMessage]):
+        if not self.verbose:
+            return
         message_origins = [_p.source_client.UUID for _p in messages]
         message_times = [_p.time for _p in messages]
         origins_with_times = [f"{src} at {t}" for src, t in zip(message_origins, message_times)]
