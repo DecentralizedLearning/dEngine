@@ -18,6 +18,8 @@ from typing import Callable, Tuple, List, Any, Literal, Sequence, Optional, Dict
 import functools
 from dataclasses import dataclass
 
+from tqdm import tqdm
+
 from dengine.partitioning import TYPE_DATASET_PARTITIONING
 from dengine.config import ClientModuleConfig
 from dengine.graph import Graph
@@ -29,7 +31,8 @@ from dengine.scenarios.event_api.events import (
     Event,
     EventHandlerDescriptor,
     LocalTrainingDescriptor,
-    SynchronizationDescriptor
+    SynchronizationDescriptor,
+    ParallelEventDescriptor,
 )
 
 
@@ -107,10 +110,12 @@ class ScenarioEventEngine(AbstractScenarioEngine[GenericClient]):
         self,
         max_communication_rounds: int = sys.maxsize,
         verbose: bool = True,
+        hide_scenario_progress: bool = False
     ):
         self.timestamp = datetime.fromtimestamp(0, tz=UTC)
         self._max_communication_rounds = max_communication_rounds
         self._verbose = verbose
+        self._hide_scenario_progress = hide_scenario_progress
         self._event_handlers: defaultdict[
             Tuple[str | None, str],  # [tag, phase]
             List[Handler]
@@ -163,9 +168,16 @@ class ScenarioEventEngine(AbstractScenarioEngine[GenericClient]):
 
     def run(self):
         self.add_events(e.StartEvent())
+        pbar = tqdm(
+            total=self._max_communication_rounds,
+            desc="Virtual time",
+            unit="s",
+            disable=self._hide_scenario_progress
+        )
         try:
             while True:
                 next_event = self.pop_next_event()
+                pbar.set_postfix_str(next_event.tag, refresh=True)
 
                 self._logging(self._format_event_str(next_event))
                 lap = datetime.now(tz=UTC)
@@ -178,6 +190,9 @@ class ScenarioEventEngine(AbstractScenarioEngine[GenericClient]):
                 ):
                     break
                 self._consume_event_with_handlers(next_event)
+
+                pbar.n = round(self.timestamp.timestamp(), 3)
+                pbar.refresh()
 
                 self.logging_note(f"Total time: {format_lap(lap)}")
                 self._logging("")
@@ -284,14 +299,31 @@ class ScenarioEventEngine(AbstractScenarioEngine[GenericClient]):
         stage: Literal["start", "end"] = "start",
         timestamp: float | None = None,
         uuids: UUID | Sequence[UUID] | None = None,
-        client: str | List[str] | None = None,
     ):
-        descriptor = LocalTrainingDescriptor(
+        descriptor = EventHandlerDescriptor(
             event_tag=tag,
             stage=stage,
             timestamp=timestamp,
             uuids=uuids,
-            client=client
+        )
+        return self.register_event_handler(descriptor)
+
+    def parallel_event(
+        self,
+        tag: str | None = None,
+        stage: Literal["start", "end"] = "start",
+        timestamp: float | None = None,
+        uuids: UUID | Sequence[UUID] | None = None,
+        contain_any_uuids: UUID | Sequence[UUID] | None = None,
+        contain_all_uuids: UUID | Sequence[UUID] | None = None
+    ):
+        descriptor = ParallelEventDescriptor(
+            event_tag=tag,
+            stage=stage,
+            timestamp=timestamp,
+            uuids=uuids,
+            contain_any_uuids=contain_any_uuids,
+            contain_all_uuids=contain_all_uuids,
         )
         return self.register_event_handler(descriptor)
 
