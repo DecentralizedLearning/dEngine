@@ -131,3 +131,41 @@ class LocalTrainingDescriptor(EventHandlerDescriptor):
         elif event.client == self.client:
             return True
         return False
+
+
+class ParallelEvent(Event):
+    events: Sequence[Event] = Field(min_length=1)
+    num_workers: int = Field(gt=0)
+
+
+@dataclass
+class ParallelEventDescriptor(EventHandlerDescriptor):
+    contain_any_uuids: UUID | Sequence[UUID] | None
+    contain_all_uuids: UUID | Sequence[UUID] | None
+
+    def match(self, event: Event) -> bool:
+        if not super().match(event):
+            return False
+
+        if not isinstance(event, ParallelEvent):
+            return False
+
+        inner_uuids = {e.uuid for e in event.events}
+
+        if self.contain_any_uuids:
+            wanted = _as_uuid_set(self.contain_any_uuids)
+            if inner_uuids.isdisjoint(wanted):
+                return False
+
+        if self.contain_all_uuids:
+            wanted = _as_uuid_set(self.contain_all_uuids)
+            if not wanted.issubset(inner_uuids):
+                return False
+
+        return True
+
+
+def _as_uuid_set(uuids: UUID | Sequence[UUID]) -> set[UUID]:
+    if isinstance(uuids, UUID):
+        return {uuids}
+    return set(uuids)
