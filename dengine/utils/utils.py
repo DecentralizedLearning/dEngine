@@ -78,7 +78,7 @@ def configure_logger(
 ):
     if verbosity == VerbosityLevel.debug:
         format_str = '[%(asctime)s][%(module)s][%(name)s][%(filename)s:%(lineno)d]\n%(message)s'
-        level = logging.INFO
+        level = logging.DEBUG
     elif verbosity == VerbosityLevel.silent:
         level = logging.ERROR
         format_str = '%(message)s'
