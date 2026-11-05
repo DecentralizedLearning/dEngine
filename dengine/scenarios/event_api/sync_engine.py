@@ -2,19 +2,20 @@ import sys
 from copy import deepcopy
 from datetime import datetime
 from typing import Sequence, Dict, Literal, Optional
+import contextlib
 from dataclasses import dataclass
 from queue import PriorityQueue
 
 import torch
 
 from dengine.config import ClientModuleConfig
-from dengine.scenarios.utils import client_on_device_context
+from dengine.scenarios.utils import client_on_device_context, executor_context
 from dengine.dataset import SupervisedDataset
 from dengine.graph import Graph, DynamicGraph
 from dengine.interfaces import MessageBase, TYPE_CLIENT_CALLBACK_FACTORY
 from dengine.partitioning import TYPE_DATASET_PARTITIONING
 from dengine.scenarios.decorators import register_scenario
-from dengine.scenarios.event_api.events import Event, StartEvent, Synchronization, LocalTraining
+from dengine.scenarios.event_api.events import Event, StartEvent, Synchronization, LocalTraining, ParallelEvent
 from dengine.scenarios.scenario import GenericClient
 
 from .scenario import ScenarioEventEngine, Depends
@@ -30,11 +31,13 @@ class DynamicUpdateMessage(MessageBase):
 class SyncEngine(ScenarioEventEngine[GenericClient]):
     def __init__(
         self,
+        *args,
         synchronization_mode: Literal['auto', 'manual'] = 'auto',
         testing_mode: Literal['on_local_training_end', 'manual'] = 'on_local_training_end',
         raise_for_unknown_event: bool = True,
+        **kwargs
     ):
-        super().__init__()
+        super().__init__(*args, **kwargs)
         self._disable_synchronization = (synchronization_mode == 'manual')
         self._disable_testing = (testing_mode == 'manual')
         self._raise_for_unknown_event = raise_for_unknown_event
@@ -92,6 +95,9 @@ class SyncEngine(ScenarioEventEngine[GenericClient]):
         elif isinstance(event, LocalTraining):
             self._client_step(event.timestamp, self.get_client(event.client))
             return
+        elif isinstance(event, ParallelEvent):
+            self._run_parallel(event)
+            return
 
         if self._raise_for_unknown_event:
             raise ValueError(f"Unknown event received: \n{event.model_dump()}")
@@ -120,6 +126,38 @@ class SyncEngine(ScenarioEventEngine[GenericClient]):
             )
             if not self._disable_testing:
                 client.test(timestamp.timestamp(), self.test_data)
+
+    def _run_parallel(
+        self,
+        event: ParallelEvent,
+    ):
+        all_events = event.events
+        if any([all_events[0].timestamp != e.timestamp for e in all_events]):
+            raise ValueError("All parallel events must happen at the same timestep")
+
+        with executor_context(event.num_workers) as pool:
+            shards = [
+                all_events[i::event.num_workers]
+                for i in range(event.num_workers)
+            ]
+            futures = [
+                pool.submit(self._consume_event_shard, shard)
+                for shard in shards if shard
+            ]
+            [f.result() for f in futures]
+
+    def _consume_event_shard(self, events: Sequence[Event]):
+        device = torch.device(self._device)
+
+        if device.type == 'cuda':
+            stream = torch.cuda.Stream(device=device)
+            stream_context = torch.cuda.stream(stream)
+        else:
+            stream_context = contextlib.nullcontext()
+
+        with stream_context:
+            for _event in events:
+                self.consume_event(_event)
 
     def _synchronize_client(
         self,
