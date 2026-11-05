@@ -62,7 +62,7 @@ def _dynamic_networkx_allocator(
 
 def _load_preset(preset: str) -> nx.Graph:
     sai_graph = getattr(nx, preset)()
-    logging.info(f"NXGraph: loaded preset: {preset}")
+    logging.debug(f"NXGraph: loaded preset: {preset}")
 
     # forcing weights to edges
     for e in sai_graph.edges():
@@ -90,13 +90,13 @@ class NXGraph(Graph):
         elif fpath:
             if not fpath.exists():
                 raise ValueError(f'Not found: {fpath}')
-            logging.info(f"NXGraph, loading from file: {fpath}")
+            logging.debug(f"NXGraph, loading from file: {fpath}")
             self.nx_graph = load_networkx_from_edgelist_file(fpath)
         elif nx_class:
-            logging.info(f"NXGraph, generated synthetic graph of type {nx_class} with parameters {kwargs}")
+            logging.debug(f"NXGraph, generated synthetic graph of type {nx_class} with parameters {kwargs}")
             self.nx_graph = _dynamic_networkx_allocator(nx_class, **kwargs)
         elif preset:
-            logging.info(f"NXGraph, loaded preset: {preset}")
+            logging.debug(f"NXGraph, loaded preset: {preset}")
             self.nx_graph = _load_preset(preset)
         else:
             raise ValueError("Either specify fpath, preset or synth args")
