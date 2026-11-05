@@ -28,7 +28,7 @@ class ModelDumpOnEpochEndCallback(PeriodicCallback):
         self._fpath = self._outfolder / self.LAST_CHECKPOINT_NAME
 
     def training_epoch_end(self, epoch: int, **kwargs):
-        logging.info(f"Saved model checkpoint at epoch: {self._fpath}")
+        logging.debug(f"Saved model checkpoint at epoch: {self._fpath}")
         torch.save(self.client.model.state_dict(), self._fpath)
 
 
@@ -44,7 +44,7 @@ class ModelDumpOnLocalTrainEndCallback(PeriodicCallback):
         self._fpath = self._outfolder / self.LAST_CHECKPOINT_NAME
 
     def local_training_end(self, *args, **kwargs):
-        logging.info(f"Saved model checkpoint at: {self._fpath}")
+        logging.debug(f"Saved model checkpoint at: {self._fpath}")
         torch.save(self.client.model.state_dict(), self._fpath)
 
 
@@ -77,7 +77,7 @@ class LossDumpCallback(PeriodicCallback):
         test_loss = float(output['loss'].mean())
         with NpyAppendArray(self._test_outfile) as f:
             f.append(np.array([test_loss]))
-        logging.info(f'Appended test loss {round(test_loss, 5)} to: {self._test_outfile}')
+        logging.debug(f'Appended test loss {round(test_loss, 5)} to: {self._test_outfile}')
 
     def local_training_end(
         self,
@@ -88,14 +88,14 @@ class LossDumpCallback(PeriodicCallback):
     ):
         with NpyAppendArray(self._tr_outfile) as tr_out_file_array:
             tr_out_file_array.append(np.array([training_loss]))
-        logging.info(f'Appended trainining loss {round(training_loss, 5)} at {current_time} to: {self._tr_outfile}')
+        logging.debug(f'Appended trainining loss {round(training_loss, 5)} at {current_time} to: {self._tr_outfile}')
 
         if not validation_loss:
             return
 
         with NpyAppendArray(self._valid_outfile) as valid_out_file_array:
             valid_out_file_array.append(np.array([validation_loss]))
-        logging.info(f'Appended validation loss {round(validation_loss, 5)} at {current_time} to: {self._valid_outfile}')
+        logging.debug(f'Appended validation loss {round(validation_loss, 5)} at {current_time} to: {self._valid_outfile}')
 
     def training_epoch_end(self, epoch: int, training_loss: float, **kwargs):
         with NpyAppendArray(self._tr_epoch_outfile) as epoch_out_file_array:
@@ -146,7 +146,7 @@ class ConfusionMatrixDumpOnCommRoundEndCallback(ConfusionMatrixDumpBase):
         test_conf_matrix = confusion_matrix_from_model_output(output['output'], self.test_data, None, self._test_labels)
         with NpyAppendArray(self._test_outfile) as f:
             f.append(test_conf_matrix)
-        logging.info(f'Appended test confusion matrix to: {self._test_outfile}')
+        logging.debug(f'Appended test confusion matrix to: {self._test_outfile}')
 
     def local_training_end(
         self,
@@ -170,12 +170,12 @@ class ConfusionMatrixDumpOnCommRoundEndCallback(ConfusionMatrixDumpBase):
         tr_conf_matrix = confusion_matrix_from_model_output(Y_hat_train, training_data.dataset, training_data.indices, self._test_labels)  # type: ignore
         with NpyAppendArray(self._tr_outfile) as tr_out_file_array:
             tr_out_file_array.append(tr_conf_matrix)
-        logging.info(f'Appended train confusion matrix to: {self._tr_outfile}')
+        logging.debug(f'Appended train confusion matrix to: {self._tr_outfile}')
 
         vl_conf_matrix = confusion_matrix_from_model_output(Y_hat_valid, validation_data.dataset, validation_data.indices, self._test_labels)  # type: ignore
         with NpyAppendArray(self._valid_outfile) as valid_out_file_array:
             valid_out_file_array.append(vl_conf_matrix)
-        logging.info(f'Appended validation confusion matrix to: {self._valid_outfile}')
+        logging.debug(f'Appended validation confusion matrix to: {self._valid_outfile}')
 
 
 @register_callback()
@@ -192,7 +192,7 @@ class ConfusionMatrixDumpOnAggregationEnd(ConfusionMatrixDumpBase):
         test_conf_matrix = confusion_matrix_from_model_output(Y_hat, self.test_data, None, self._test_labels)
         with NpyAppendArray(self._test_outfile) as f:
             f.append(test_conf_matrix)
-        logging.info(f'Appended test confusion matrix after agg and before local train to: {self._test_outfile}')
+        logging.debug(f'Appended test confusion matrix after agg and before local train to: {self._test_outfile}')
 
 
 @register_callback()
@@ -229,13 +229,13 @@ class ConfusionMatrixDumpOnEpochEndCallback(ConfusionMatrixDumpBase):
         tr_conf_matrix = confusion_matrix_from_model_output(Y_hat_train, training_data.dataset, training_data.indices, self._test_labels)  # type: ignore
         with NpyAppendArray(self._tr_outfile) as tr_out_file_array:
             tr_out_file_array.append(tr_conf_matrix)
-        logging.info(f'Appended train confusion matrix to: {self._tr_outfile}')
+        logging.debug(f'Appended train confusion matrix to: {self._tr_outfile}')
 
         Y_hat_test = get_output_in_production(self.client.model, self.test_data, None, self.batch_size)
         test_conf_matrix = confusion_matrix_from_model_output(Y_hat_test, self.test_data, None, self._test_labels)
         with NpyAppendArray(self._test_outfile) as f:
             f.append(test_conf_matrix)
-        logging.info(f'Appended test confusion matrix to: {self._test_outfile}')
+        logging.debug(f'Appended test confusion matrix to: {self._test_outfile}')
 
 
 @register_callback()
@@ -260,4 +260,4 @@ class ConfusionMatrixDumpOnTestInferenceEnd(PeriodicCallback):
             f.append(test_conf_matrix)
         with NpyAppendArray(self._time_outfile) as f:
             f.append(np.array([current_time]))
-        logging.info(f'Appended test confusion matrix to: {self._test_outfile}')
+        logging.debug(f'Appended test confusion matrix to: {self._test_outfile}')
