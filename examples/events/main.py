@@ -42,7 +42,11 @@ def create_engine(
     test_timedelta: timedelta,
 ):
     engine = SyncEngine[DecAvgClient](
+        # Manual sync: the engine's built-in synchronization becomes an idempotent no-op.
+        # Model exchange is handled by the update_buffers() handler on Synchronization events.
         synchronization_mode="manual",
+        # Manual testing: skip the engine's automatic test after each local training.
+        # Clients are evaluated periodically by the "test" event handler, test_clients().
         testing_mode="manual",
         raise_for_unknown_event=False
     )
