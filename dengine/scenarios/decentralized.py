@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import List, Sequence, TypeVar
 from tqdm import tqdm
-import contextlib
 from abc import abstractmethod
 from warnings import deprecated
 
@@ -16,7 +15,7 @@ from torch.utils.data import Subset
 from dengine.models.utils import model_wise_weighted_average
 from dengine.interfaces import MessageBase
 
-from .utils import client_on_device_context, executor_context
+from .utils import cuda_stream_context, client_on_device_context, executor_context
 from .scenario import AbstractClient, AbstractScenarioEngine
 from .decorators import register_scenario, register_client
 
@@ -209,14 +208,7 @@ class VanillaDecentralizedSynch(DecentralizedScenarioEngineBase):
 
     def _clients_shard_update_and_test(self, _round: int, clients: List[DecAvgClient]):
         device = torch.device(self._device)
-
-        if device.type == 'cuda':
-            stream = torch.cuda.Stream(device=device)
-            stream_context = torch.cuda.stream(stream)
-        else:
-            stream_context = contextlib.nullcontext()
-
-        with stream_context:
+        with cuda_stream_context(device):
             for _client in clients:
                 with client_on_device_context(_client, device):
                     _client.update(_round)
