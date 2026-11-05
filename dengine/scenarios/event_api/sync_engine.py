@@ -2,14 +2,13 @@ import sys
 from copy import deepcopy
 from datetime import datetime
 from typing import Sequence, Dict, Literal, Optional
-import contextlib
 from dataclasses import dataclass
 from queue import PriorityQueue
 
 import torch
 
 from dengine.config import ClientModuleConfig
-from dengine.scenarios.utils import client_on_device_context, executor_context
+from dengine.scenarios.utils import client_on_device_context, executor_context, cuda_stream_context
 from dengine.dataset import SupervisedDataset
 from dengine.graph import Graph, DynamicGraph
 from dengine.interfaces import MessageBase, TYPE_CLIENT_CALLBACK_FACTORY
@@ -89,7 +88,7 @@ class SyncEngine(ScenarioEventEngine[GenericClient]):
             self._synchronize_client(
                 event.timestamp,
                 self.get_client(event.src),
-                self.get_many_clients(event.destinations)
+                self.get_many_clients(event.destinations) if event.destinations else None
             )
             return
         elif isinstance(event, LocalTraining):
@@ -132,7 +131,7 @@ class SyncEngine(ScenarioEventEngine[GenericClient]):
         event: ParallelEvent,
     ):
         all_events = event.events
-        if any([all_events[0].timestamp != e.timestamp for e in all_events]):
+        if any([event.timestamp != e.timestamp for e in all_events]):
             raise ValueError("All parallel events must happen at the same timestep")
 
         with executor_context(event.num_workers) as pool:
@@ -148,16 +147,9 @@ class SyncEngine(ScenarioEventEngine[GenericClient]):
 
     def _consume_event_shard(self, events: Sequence[Event]):
         device = torch.device(self._device)
-
-        if device.type == 'cuda':
-            stream = torch.cuda.Stream(device=device)
-            stream_context = torch.cuda.stream(stream)
-        else:
-            stream_context = contextlib.nullcontext()
-
-        with stream_context:
+        with cuda_stream_context(device):
             for _event in events:
-                self.consume_event(_event)
+                self._consume_event_with_handlers(_event)
 
     def _synchronize_client(
         self,
