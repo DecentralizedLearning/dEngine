@@ -13,6 +13,28 @@ def client_on_device_context(client: ClientInterface, device: torch.device):
     client.model.cpu()
 
 
+@contextmanager
+def cuda_stream_context(device: torch.device):
+    if device.type != 'cuda':
+        yield
+        return
+
+    current_stream = torch.cuda.current_stream(device)
+    stream = torch.cuda.Stream(device=device)
+    stream.wait_stream(current_stream)
+    try:
+        with torch.cuda.stream(stream):
+            yield
+    finally:
+        current_stream.wait_stream(stream)
+
+
+@contextmanager
+def cuda_client(client: ClientInterface, device: torch.device):
+    with cuda_stream_context(device), client_on_device_context(client, device):
+        yield
+
+
 class SerialExecutor:
     def submit(self, fn, *args, **kwargs) -> Future:
         f = Future()
