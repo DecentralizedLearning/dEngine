@@ -156,6 +156,15 @@ class LocalTrainingEngineInterface(ABC):
         raise NotImplementedError()
 
 
+class ModuleMock:
+    def __init__(self, model: nn.Module):
+        d = model.state_dict()
+        self._state_dict = {k: v.detach().clone() for k, v in d.items()}
+
+    def state_dict(self):
+        return self._state_dict
+
+
 class ModuleBase(nn.Module):
     def __init__(
         self,
@@ -164,6 +173,9 @@ class ModuleBase(nn.Module):
         **kwargs
     ):
         super().__init__()
+
+    def fast_deepcopy(self):
+        return ModuleMock(self)
 
 
 class ClientCallbackInterface(Generic[GenericMessage]):
