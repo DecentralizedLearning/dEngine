@@ -219,6 +219,8 @@ class AbstractClient(ClientInterface[GenericMessage]):
         for k, v in self.__dict__.items():
             if k in ("_scenario", "_callback", "_local_strategy", "_msg_buffer"):
                 setattr(result, k, None)
+            elif isinstance(v, ModuleBase):
+                setattr(result, k, v.fast_deepcopy())
             else:
                 setattr(result, k, deepcopy(v, memo))
         return result
