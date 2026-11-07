@@ -31,13 +31,15 @@ def load_emnist(
     target_labels: List[int] = [],
     class_balance: bool = True,
     split: str = 'letters',
+    use_cache: bool = False,
     *args, **kwargs
 ) -> SupervisedDataset:
     mnist = EMNIST(output_path, split=split, train=train, download=True, transform=_MNIST_TRANSFORM)
     dataset = SupervisedDataset(
         data=mnist.data,
         targets=mnist.targets,
-        trasnform=mnist.transform
+        trasnform=mnist.transform,
+        use_cache=use_cache
     )
 
     if class_balance:
