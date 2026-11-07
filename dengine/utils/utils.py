@@ -182,3 +182,18 @@ def markdown_codeblock(disabled: bool = False):
         logging.info("```")
     else:
         yield
+
+
+@contextmanager
+def print_perf(client, client_id):
+    if client.UUID != client_id:
+        yield
+        return
+
+    import time
+    t0 = time.perf_counter()
+    yield
+    t1 = time.perf_counter()
+    print(
+        f"{client.UUID} measured time {t1 - t0:.3f}s"
+    )

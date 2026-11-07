@@ -56,6 +56,7 @@ def load_cifar100(
     target_labels: List[int] = [],
     class_balance: bool = True,
     augmentations: bool = True,
+    use_cache: bool = False,
     *args, **kwargs
 ) -> SupervisedDataset:
     if train and augmentations:
@@ -67,12 +68,13 @@ def load_cifar100(
         output_path,
         train=train,
         download=True,
-        transform=transforms
+        transform=transforms,
     )
     dataset = SupervisedDataset(
         data=torch.from_numpy(cifar.data),
         targets=Tensor(cifar.targets).type(torch.int64),
-        transform=cifar.transform
+        transform=cifar.transform,
+        use_cache=use_cache,
     )
 
     if class_balance:
@@ -105,6 +107,7 @@ def load_cifar10(
     target_labels: List[int] = [],
     class_balance: bool = True,
     augmentations: bool = True,
+    use_cache: bool = False,
     *args, **kwargs
 ) -> SupervisedDataset:
     if train and augmentations:
@@ -121,7 +124,8 @@ def load_cifar10(
     dataset = SupervisedDataset(
         data=torch.from_numpy(cifar.data),
         targets=Tensor(cifar.targets).type(torch.int64),
-        transform=cifar.transform
+        transform=cifar.transform,
+        use_cache=use_cache
     )
 
     if class_balance:

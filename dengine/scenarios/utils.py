@@ -23,7 +23,7 @@ def cuda_stream_context(device: torch.device):
     stream = torch.cuda.Stream(device=device)
     stream.wait_stream(current_stream)
     try:
-        with torch.cuda.stream(stream):
+        with torch.autograd.set_multithreading_enabled(False), torch.cuda.stream(stream):
             yield
     finally:
         current_stream.wait_stream(stream)

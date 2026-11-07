@@ -254,6 +254,14 @@ def main():
     simulation_args, _ = cli_argument_parser(parser)
     extra_arguments = parser.parse_args()
 
+    client_parallelism_overrides = {}
+    if extra_arguments.num_parallel_clients > 1:
+        client_parallelism_overrides = {
+            "scenario.arguments.num_parallel_clients": extra_arguments.num_parallel_clients,
+            "dataset.train.arguments.use_cache": True,
+            "dataset.test.arguments.use_cache": True,
+        }
+
     configurations = []
     try:
         for architecture_cfg in [CNN_MNIST, WIDE_RESNET]:
@@ -262,7 +270,7 @@ def main():
                 *load_decentralized(
                     simulation_args,
                     additional_config_overrides={
-                        "scenario.arguments.num_parallel_clients": extra_arguments.num_parallel_clients,
+                        **client_parallelism_overrides,
                         **architecture_cfg
                     },
                     debug=extra_arguments.debug

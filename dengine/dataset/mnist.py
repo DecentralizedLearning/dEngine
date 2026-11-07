@@ -36,6 +36,7 @@ def load_mnist(
     target_labels: List[int] = [],
     class_balance: bool = True,
     subset_fraction: float = 1,
+    use_cache: bool = False,
     *args, **kwargs
 ) -> SupervisedDataset:
     mnist = MNIST(output_path, train=train, download=True, transform=_MNIST_TRANSFORM)
@@ -44,7 +45,8 @@ def load_mnist(
     dataset = SupervisedDataset(
         data=mnist.data[:end],
         targets=mnist.targets[:end],
-        transform=mnist.transform
+        transform=mnist.transform,
+        use_cache=use_cache
     )
 
     if class_balance:
