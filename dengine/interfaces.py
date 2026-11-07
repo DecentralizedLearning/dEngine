@@ -164,6 +164,9 @@ class ModuleMock:
     def state_dict(self):
         return self._state_dict
 
+    def load_state_dict(self, value):
+        self._state_dict = value
+
 
 class ModuleBase(nn.Module):
     def __init__(
