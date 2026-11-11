@@ -290,7 +290,7 @@ class TrainingEngine(EarlyStoppingBase):
     def __init__(
         self,
         *args,
-        optimizer: Literal["SGD", "Adam"],
+        optimizer: Literal["SGD", "Adam", "AdamW"],
         lr: float,
         sgd_momentum: float = 0,
         adam_weight_decay: float = 0,
@@ -315,6 +315,12 @@ class TrainingEngine(EarlyStoppingBase):
             )
         elif self._optimizer_type == "Adam":
             return torch.optim.Adam(
+                net.parameters(),
+                lr=self._lr,
+                weight_decay=self._adam_weigth_decay
+            )
+        elif self._optimizer_type == "AdamW":
+            return torch.optim.AdamW(
                 net.parameters(),
                 lr=self._lr,
                 weight_decay=self._adam_weigth_decay
