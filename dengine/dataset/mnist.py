@@ -3,9 +3,11 @@ from typing import List
 import PIL.Image as pil
 from PIL.Image import Image
 import numpy as np
+import torch
 from torch import Tensor
 from torchvision.datasets import MNIST
-from torchvision.transforms import Compose, ToTensor, Normalize
+from torchvision.transforms import Compose, Normalize
+from torchvision.transforms import v2
 
 from .utils import filter_integer_targets, balanance_class_samples, _unnormalize_tensor
 from .dataset import SupervisedDataset
@@ -13,7 +15,7 @@ from .decorators import register_dataset
 
 
 _MNIST_TRANSFORM = Compose([
-    ToTensor(),
+    v2.ToDtype(torch.float32, scale=True),
     Normalize((0.5,), (0.5,))
 ])
 
