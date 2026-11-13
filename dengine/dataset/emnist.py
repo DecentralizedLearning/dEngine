@@ -34,11 +34,11 @@ def load_emnist(
     use_cache: bool = False,
     *args, **kwargs
 ) -> SupervisedDataset:
-    mnist = EMNIST(output_path, split=split, train=train, download=True, transform=_MNIST_TRANSFORM)
+    emnist = EMNIST(output_path, split=split, train=train, download=True, transform=_MNIST_TRANSFORM)
     dataset = SupervisedDataset(
-        data=mnist.data,
-        targets=mnist.targets,
-        trasnform=mnist.transform,
+        data=emnist.data,
+        targets=emnist.targets,
+        trasnform=emnist.transform,
         use_cache=use_cache
     )
 
