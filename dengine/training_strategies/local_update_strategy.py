@@ -1,6 +1,6 @@
 from abc import abstractmethod
 
-from typing import Optional, Literal, Dict
+from typing import Optional, Literal, Dict, Any
 import threading
 from warnings import deprecated
 import copy
@@ -48,6 +48,7 @@ class EarlyStoppingBase(LocalTrainingEngineInterface):
         # Additional kwargs
         verbose: bool = True,
         patience: int = 0,
+        training_DataLoader_kwargs: Dict[str, Any] = {},
     ):
         self._scenario = scenario
         self._client = client
@@ -69,7 +70,8 @@ class EarlyStoppingBase(LocalTrainingEngineInterface):
             self._ldr_train = DataLoader(
                 training_data,
                 self._training_batch_size,
-                shuffle=True
+                shuffle=True,
+                **training_DataLoader_kwargs
             )
         self._training_data = training_data
         self._validation_data = validation_data
