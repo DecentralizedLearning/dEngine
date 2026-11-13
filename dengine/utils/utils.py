@@ -37,8 +37,8 @@ def seed_everything(seed: int):
     # Python RNG
     np.random.seed(seed)
     random.seed(seed)
-    torch.backends.cudnn.benchmark = False
-    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = os.environ.get('TORCH_CUDNN_BENCHMARK', "false").lower() == "true"
+    torch.backends.cudnn.deterministic = os.environ.get('TORCH_CUDNN_DETERMINISTIC', "true").lower() == "true"
 
 
 @torch.no_grad()
@@ -185,7 +185,7 @@ def markdown_codeblock(disabled: bool = False):
 
 
 @contextmanager
-def print_perf(client, client_id):
+def print_perf(client, client_id, tag: str = "PERF"):
     if client.UUID != client_id:
         yield
         return
@@ -195,5 +195,5 @@ def print_perf(client, client_id):
     yield
     t1 = time.perf_counter()
     print(
-        f"{client.UUID} measured time {t1 - t0:.3f}s"
+        f"[{tag}] {client.UUID} measured time {t1 - t0:.3f}s"
     )
