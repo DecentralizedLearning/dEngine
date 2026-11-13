@@ -179,6 +179,8 @@ class VanillaDecentralizedSynch(DecentralizedScenarioEngineBase):
 
     def run(self):
         clients = list(self.clients.values())
+        self.training_data.cache
+        self.test_data.cache
 
         for _client in self.clients.values():
             _client.model.cpu()
