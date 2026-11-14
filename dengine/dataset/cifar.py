@@ -6,16 +6,8 @@ from torch import Tensor
 import PIL.Image as pil
 from PIL.Image import Image
 from torchvision.datasets import CIFAR100, CIFAR10
-from torchvision.transforms import (
-    Compose,
-    ToTensor,
-    Normalize,
-    RandomCrop,
-    RandomHorizontalFlip,
-    ColorJitter,
-    RandomRotation,
-    RandomErasing,
-)
+from torchvision.transforms import v2
+from torchvision.transforms import Compose
 
 from .dataset import SupervisedDataset
 from .utils import filter_integer_targets, balanance_class_samples, _unnormalize_tensor
@@ -23,18 +15,17 @@ from .decorators import register_dataset, register_postprocessing
 
 
 CIFAR_TRANSFORM = Compose([
-    ToTensor(),
-    Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+    v2.ToDtype(torch.float32, scale=True),
+    v2.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616)),
 ])
 
 CIFAR_TRAINING_TRANSFORM = Compose([
-    RandomCrop(32, padding=4),
-    RandomHorizontalFlip(),
-    ColorJitter(0.2, 0.2, 0.2, 0.1),
-    RandomRotation(30),
-    ToTensor(),
-    RandomErasing(p=0.5, scale=(0.02, 0.33), ratio=(0.3, 3.3)),
-    Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+    v2.RandomCrop(32, padding=4, padding_mode='reflect'),
+    v2.RandomHorizontalFlip(),
+    v2.TrivialAugmentWide(),
+    v2.ToDtype(torch.float32, scale=True),
+    v2.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616)),
+    v2.RandomErasing(p=0.25),
 ])
 
 
@@ -71,7 +62,7 @@ def load_cifar100(
         transform=transforms,
     )
     dataset = SupervisedDataset(
-        data=torch.from_numpy(cifar.data),
+        data=torch.from_numpy(cifar.data).permute(0, 3, 1, 2).contiguous(),
         targets=Tensor(cifar.targets).type(torch.int64),
         transform=cifar.transform,
         use_cache=use_cache,
@@ -122,7 +113,7 @@ def load_cifar10(
         transform=transforms
     )
     dataset = SupervisedDataset(
-        data=torch.from_numpy(cifar.data),
+        data=torch.from_numpy(cifar.data).permute(0, 3, 1, 2).contiguous(),
         targets=Tensor(cifar.targets).type(torch.int64),
         transform=cifar.transform,
         use_cache=use_cache

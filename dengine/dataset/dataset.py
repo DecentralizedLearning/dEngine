@@ -2,7 +2,6 @@ from typing import Tuple, Any, List, Optional
 import threading
 from dataclasses import dataclass
 
-import PIL.Image as pil
 import torch
 
 from torch import Tensor
@@ -30,7 +29,6 @@ class SupervisedDataset(VisionDataset):
         self._cache_lock = threading.Lock()
         self.data = data
         self.targets = targets
-        self._pil_read_mode = 'L' if len(data.shape) < 4 else 'RGB'
 
         self._use_cache = use_cache
         self._cache: Optional[_Cache] = None
@@ -59,7 +57,6 @@ class SupervisedDataset(VisionDataset):
         return (self._cache.samples, self._cache.labels)
 
     def _process_img(self, img: Tensor) -> Any:
-        img = pil.fromarray(img.numpy(), mode=self._pil_read_mode)
         if self.transform is not None:
             img = self.transform(img)
         return img
