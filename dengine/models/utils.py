@@ -189,7 +189,7 @@ def unsafe_element_wise_weighted_average(
 
 
 def get_image_size(dataset: Subset) -> int:
-    return dataset.dataset.data.size(1)  # type: ignore
+    return dataset.dataset.data.size(-1)  # type: ignore
 
 
 def get_image_channels(dataset: Subset) -> int:
@@ -197,7 +197,7 @@ def get_image_channels(dataset: Subset) -> int:
     if len(dataset.data.shape) == 3:  # type: ignore
         return 1
     else:
-        return dataset.data.size(3)  # type: ignore
+        return dataset.data.size(1)  # type: ignore
 
 
 def get_unique_targets(dataset: Subset) -> Sequence[Any]:
