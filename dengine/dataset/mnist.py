@@ -14,9 +14,24 @@ from .dataset import SupervisedDataset
 from .decorators import register_dataset
 
 
+"""
+MNIST normalization constants (mean, std), in float32.
+
+Computed 2026-11-19 with:
+    python bin/torchvision_dataset_normalization.py \
+        --dataset MNIST \
+        --dataset_output_path datasets/ \
+        --precision float32
+
+Environment:
+    Python 3.13.11
+    torch==2.15.0+cpu
+    torchvision==0.29.2+cpu
+    dengine-vit-pytorch @ git+https://github.com/DecentralizedLearning/dengine-vit-pytorch.git@f09a28ae2c014275168895d0f4364bdc74d5f8c6
+"""
 _MNIST_TRANSFORM = Compose([
     v2.ToDtype(torch.float32, scale=True),
-    v2.Normalize((0.1307,), (0.3081,)),
+    v2.Normalize((0.1309,), (0.3084,)),
 ])
 
 
