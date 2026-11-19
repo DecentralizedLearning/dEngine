@@ -279,8 +279,6 @@ class AbstractScenarioEngine(ScenarioEngineInterface, Generic[GenericClient]):
         local_model = None
         clients: Dict[str, GenericClient] = {}
         for pid in list(self.graph.nodes):
-            pid = str(pid)
-
             if local_model and common_init:
                 local_model = deepcopy(local_model)
             else:
