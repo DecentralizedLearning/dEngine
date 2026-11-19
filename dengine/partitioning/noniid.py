@@ -52,9 +52,11 @@ def _get_zipf_probabilities(
 @register_partitioning()
 def zipf_noniid_truncated(
     dataset: SupervisedDataset,
-    *args,
+    test: SupervisedDataset,
+    partitions: TYPE_DATASET_PARTITIONING,
     graph: Graph,
     validation_percentage: float,
+    *args,
     zipf_alpha: Optional[float] = None,
     prob_vec: Optional[Iterable[float]] = None,
     minimum_training_samples_per_class: int = 0,
@@ -77,9 +79,10 @@ def zipf_noniid_truncated(
     rescaled_probs = user_probabilities / torch.sum(user_probabilities, dim=0)
 
     # Partition the dataset between users
-    partitions = dataset_partitions_with_rolling_probability(
+    _partitions = dataset_partitions_with_rolling_probability(
         dataset,
         rescaled_probs,
+        graph,
         minimum_class_samples=math.ceil(
             minimum_training_samples_per_class / (1 - validation_percentage)
         )
@@ -89,7 +92,7 @@ def zipf_noniid_truncated(
     train_test_partitions = split_partitions_targets_into_train_and_test(
         dataset,
         validation_percentage,
-        partitions
+        _partitions
     )
 
     return train_test_partitions
@@ -98,9 +101,11 @@ def zipf_noniid_truncated(
 @register_partitioning()
 def random_iid_balanced_with_class_majority_hub(
     dataset: SupervisedDataset,
-    *args,
+    test: SupervisedDataset,
+    partitions: TYPE_DATASET_PARTITIONING,
     graph: Graph,
     validation_percentage: float,
+    *args,
     hub_training_samples: Union[int, float],
     classes: Union[Iterable[int], int],
     max_per_label_samples: int = maxsize,
@@ -122,7 +127,7 @@ def random_iid_balanced_with_class_majority_hub(
         ith_label_partitions = {}
         available_idxs = set(idxs)
 
-        users = set(map(str, range(num_users)))
+        users = set(graph.nodes)
         samples_to_draw_per_user = samples_to_draw_per_label
 
         # 2.1 Non-iid class, we need to use hub_training_samples
@@ -162,9 +167,11 @@ def random_iid_balanced_with_class_majority_hub(
 @register_partitioning()
 def default_random_iid_balanced(
     dataset: SupervisedDataset,
-    *args,
+    test: SupervisedDataset,
+    partitions: TYPE_DATASET_PARTITIONING,
     graph: Graph,
     validation_percentage: float,
+    *args,
     mapping: Dict[int, float] = {},
     **kwargs
 ) -> TYPE_DATASET_PARTITIONING:
@@ -181,9 +188,11 @@ def default_random_iid_balanced(
 @register_partitioning()
 def default_random_iid_balanced_with_class_majority_hub(
     dataset: SupervisedDataset,
-    *args,
+    test: SupervisedDataset,
+    partitions: TYPE_DATASET_PARTITIONING,
     graph: Graph,
     validation_percentage: float,
+    *args,
     hub_training_samples: Union[int, float],
     classes: Union[Iterable[int], int],
     max_per_label_samples: int = maxsize,

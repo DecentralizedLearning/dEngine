@@ -18,22 +18,24 @@ from .decorators import register_partitioning
 @register_partitioning()
 def random_iid(
     dataset: SupervisedDataset,
-    *args,
+    test: SupervisedDataset,
+    partitions: TYPE_DATASET_PARTITIONING,
     graph: Graph,
     validation_percentage: float,
+    *args,
     **kwargs
 ) -> TYPE_DATASET_PARTITIONING:
     num_users = len(graph.nodes)
     num_items = len(dataset) // num_users
-    partitions = {}
+    _partitions = {}
     all_idxs = set(range(len(dataset)))
 
-    for i in range(num_users):
+    for i in graph.nodes:
         ith_user_idxs = random.sample(list(all_idxs), num_items)
         all_idxs -= set(ith_user_idxs)
-        partitions[str(i)] = Tensor(ith_user_idxs).type(torch.int)
+        _partitions[i] = Tensor(ith_user_idxs).type(torch.int)
 
-    train_test_partitions = split_partitions_into_train_and_test(validation_percentage, partitions)
+    train_test_partitions = split_partitions_into_train_and_test(validation_percentage, _partitions)
 
     return train_test_partitions
 
@@ -41,8 +43,10 @@ def random_iid(
 @register_partitioning()
 def random_iid_balanced(
     dataset: SupervisedDataset,
-    *args,
+    test: SupervisedDataset,
+    partitions: TYPE_DATASET_PARTITIONING,
     graph: Graph,
+    *args,
     validation_percentage: float,
     max_per_label_samples: int = maxsize,
     **kwargs
@@ -81,8 +85,11 @@ def random_iid_balanced(
 @register_partitioning()
 def random_iid_balanced_exclude_hub(
     dataset: SupervisedDataset,
+    test: SupervisedDataset,
+    partitions: TYPE_DATASET_PARTITIONING,
+    graph: Graph,
+    validation_percentage: float,
     *args,
-    graph: NXGraph,
     **kwargs
 ) -> TYPE_DATASET_PARTITIONING:
     if not isinstance(graph, NXGraph):

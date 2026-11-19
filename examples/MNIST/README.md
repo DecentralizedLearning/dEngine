@@ -133,3 +133,13 @@ PYTHON_GIL=0 python main.py \
 ```
 
 To plot the results, use the *Comparison plot* in the [notebooks repository](https://github.com/DecentralizedLearning/notebooks).
+
+> [!TIP]
+> **Faster training on GPU:** set these before running.
+>
+> ```bash
+> export TORCH_CUDNN_BENCHMARK=True
+> export TORCH_CUDNN_DETERMINISTIC=False
+> ```
+>
+> Results will no longer be bit-for-bit reproducible between runs.
