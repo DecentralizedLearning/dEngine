@@ -102,10 +102,12 @@ def random_iid_balanced_exclude_hub(
     g.remove_node(max_node)
 
     nx_g = NXGraph(experiment_cfg=graph._experiment_cfg, graph=g)
-    partitioning = random_iid_balanced(dataset, *args, graph=nx_g, **kwargs)
+    partitioning = random_iid_balanced(
+        dataset, test, partitions, nx_g, *args, validation_percentage=validation_percentage, **kwargs
+    )
     partitioning[f"{max_node}"] = {
-        "train": Tensor([]),
-        "validation": Tensor([])
+        "train": torch.empty(0, dtype=torch.int),
+        "validation": torch.empty(0, dtype=torch.int)
     }
     return partitioning
 
