@@ -183,3 +183,8 @@ As of today you can either cite one of these two papers:
 
 > **Note**:
 > Full source code will be released soon as we finalize upcoming extensions
+
+## Pull Request & Commit Guidelines
+* **Linear History is mandatory**. Rebase!
+* **One commit per file:** Keep commits atomic by limiting each commit to a single modified file.
+* **Write clear commit titles:** Commit titles are important for tracking changes and generating release notes. Use a descriptive, imperative summary.
