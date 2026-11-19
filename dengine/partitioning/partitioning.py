@@ -7,6 +7,7 @@ from copy import deepcopy
 from torch import Generator
 
 from dengine.dataset import SupervisedDataset
+from dengine.graph import Graph
 
 
 TYPE_PARTITION = Dict[Literal["train", "validation"], Tensor]
@@ -16,6 +17,7 @@ TYPE_DATASET_PARTITIONING = Dict[str, TYPE_PARTITION]
 def dataset_partitions_with_rolling_probability(
     dataset: SupervisedDataset,
     probabilities: Tensor,
+    graph: Graph,
     minimum_class_samples: int = 0,
 ) -> Dict[str, Tensor]:
     partitions = defaultdict(list)
@@ -25,14 +27,14 @@ def dataset_partitions_with_rolling_probability(
         user_probs = torch.roll(probabilities, i)
 
         offset = 0
-        for current_user_index in range(len(user_probs)):
+        for current_user_index in graph.nodes:
             partitions[current_user_index].append(
                 j_class_indexes[offset:offset + minimum_class_samples]
             )
             offset = offset + minimum_class_samples
         j_class_cardinality_after_min_samples = j_class_indexes.shape[0] - offset
 
-        for current_user_index, current_user_probability in enumerate(user_probs):
+        for current_user_index, current_user_probability in zip(graph.nodes, user_probs):
             user_sample_num = (
                 (j_class_cardinality_after_min_samples * current_user_probability)
                 .round().int()
@@ -44,7 +46,7 @@ def dataset_partitions_with_rolling_probability(
         partitions[current_user_index].append(
             j_class_indexes[offset:]
         )
-    return {str(_k): torch.hstack(_x) for _k, _x in partitions.items()}
+    return {_k: torch.hstack(_x) for _k, _x in partitions.items()}
 
 
 def split_partitions_into_train_and_test(
