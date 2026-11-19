@@ -1,2 +1,4 @@
 partitioning:
   target: random_iid_balanced_exclude_hub
+  arguments:
+    validation_percentage: .2
