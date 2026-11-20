@@ -27,6 +27,7 @@ def filter_integer_targets(
     allowed_targets: Optional[Sequence[int]] = None,
     exclude_targets: Optional[Sequence[int]] = None
 ) -> T:
+    """Keep or discard samples by their integer target labels."""
     if len(dataset) == 0:
         logging.warning('Empty dataset')
         return dataset
@@ -40,25 +41,15 @@ def filter_integer_targets(
     if (allowed_targets is not None) and (exclude_targets is not None):
         raise ValueError('Arguments "exclude" and "include" are mutually exclusive')
 
-    mask = torch.ones(len(dataset)).type(torch.bool)
-    if allowed_targets:
-        final_classes = [dataset.unique_targets[c] for c in allowed_targets]
-        t_allowed_classes = torch.Tensor(allowed_targets)
-        mask &= torch.isin(dataset.targets, t_allowed_classes)
-
-    if exclude_targets:
-        final_classes: List[str] = []
-        for class_idx, class_label in enumerate(dataset.unique_targets):
-            if class_idx in exclude_targets:
-                continue
-            final_classes.append(class_label)
-        t_exclude_classes = torch.Tensor(exclude_targets)
-        mask &= ~torch.isin(dataset.targets, t_exclude_classes)
-
-    allowed_classes_idxs = torch.where(mask)
-    dataset.data = dataset.data[allowed_classes_idxs]
-    dataset.targets = dataset.targets[allowed_classes_idxs]
-    dataset.unique_targets = final_classes
+    labels = allowed_targets if allowed_targets is not None else exclude_targets
+    if labels is None or len(labels) == 0:
+        return dataset
+    selected = torch.as_tensor(labels, dtype=dataset.targets.dtype, device=dataset.targets.device)
+    mask = torch.isin(dataset.targets, selected)
+    if exclude_targets is not None:
+        mask = ~mask
+    dataset.data = dataset.data[mask]
+    dataset.targets = dataset.targets[mask]
     return dataset
 
 
@@ -111,6 +102,8 @@ def merge_into_empty_dataset(
 def balanance_class_samples(dataset: SupervisedDataset):
     dataset = deepcopy(dataset)
     unique_targets, counts = dataset.targets.unique(return_counts=True)
+    if len(counts) == 0:
+        return dataset
     min_count = min(counts)
     indxs = []
     for y in unique_targets:
