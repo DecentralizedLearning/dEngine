@@ -188,3 +188,21 @@ As of today you can either cite one of these two papers:
 * **Linear History is mandatory**. Rebase!
 * **One commit per file:** Keep commits atomic by limiting each commit to a single modified file.
 * **Write clear commit titles:** Commit titles are important for tracking changes and generating release notes. Use a descriptive, imperative summary.
+
+## AI-Assisted Contributions
+Time is sacred and human learning/understanding is the final goal.
+
+Given that nowadays LLMs have lowered the requirements of writing software, a few guidelines are needed to steer the project correctly. Specifically, while writing thousands of lines has become extremely cheap, reviewing them is extremely costly. Due to a lack of time/energy, I feel the need to filter contributions before starting a code review. Contributions should come from people who have real interest in the project.
+
+Throughout these few lines, I will refer to **"blind contributions"** as PRs for the sake of contributing, which lack an underlying motivation or interest in the project.
+
+* Blind contributions are not welcome.
+* Low-hanging fruits, issues which are marked as entry level, are there to let newcomers understand the project and learn better how to interact with or extend the codebase.
+* Before contributing to the project, ask yourself:
+  - Do I have or am I building sufficient background to understand and appreciate this work?
+  - Do I like working in decentralized learning?
+  - Have I used, or do I plan to use, the repository for my own work?
+
+  If the answers to these questions are positive, then please contact me personally via email (samuele.sabella@iit.cnr.it). The project is still basically a solo-developer project and sharing the experience in the field is extremely valuable.
+* In case you do not agree with the policy, you are free to fork this repo and manage it as you like since it is distributed with an MIT license.
+
