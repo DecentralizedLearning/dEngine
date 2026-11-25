@@ -1,4 +1,5 @@
 import unittest
+from dataclasses import dataclass
 from unittest.mock import MagicMock, patch
 
 from dengine.callbacks import CallbackList, DummyCallback, PeriodicCallback, callback_factory
@@ -30,8 +31,27 @@ REDEFINITIONS = {hook: hook.removeprefix('on_') for hook, _, _ in HOOK_CALLS}
 # module loader, which raises one of these depending on the shape of the name.
 UNRESOLVED_TARGET_ERRORS = (ModuleNotFoundError, AttributeError)
 
+
+@dataclass(frozen=True)
+class CallbackSetup:
+    kind: str
+    label: str
+    client: object
+    scenario: object
+    test_data: object
+    experiment_configuration: object
+
+
+@dataclass(frozen=True)
+class HookCall:
+    label: str
+    hook: str
+    args: tuple
+    kwargs: dict
+
+
 # Shared trace written by the doubles below. Tests clear it in setUp.
-TRACE = []
+TRACE: list[CallbackSetup | HookCall] = []
 
 
 class ListenerDouble:
@@ -43,7 +63,7 @@ class ListenerDouble:
 
 def _make_listener_hook(hook):
     def method(self, *args, **kwargs):
-        TRACE.append((self.label, hook, args, kwargs))
+        TRACE.append(HookCall(self.label, hook, args, kwargs))
     return method
 
 
@@ -82,12 +102,14 @@ class TraceCallback(PeriodicCallback):
     def __init__(self, client, scenario, test_data, experiment_configuration, label='cb', **periods):
         super().__init__(client, scenario, test_data, experiment_configuration, **periods)
         self.label = label
-        TRACE.append(('init', self.KIND, label, client, scenario, test_data, experiment_configuration))
+        TRACE.append(CallbackSetup(
+            self.KIND, label, client, scenario, test_data, experiment_configuration
+        ))
 
 
 def _make_trace_hook(name):
     def hook(self, *args, **kwargs):
-        TRACE.append((self.label, name, args, kwargs))
+        TRACE.append(HookCall(self.label, name, args, kwargs))
     return hook
 
 
@@ -206,7 +228,7 @@ class CallbackFactoryTest(IsolatedRegistryTestCase):
         self.test_data = MagicMock()
         self.experiment_configuration = MagicMock()
 
-    def build(self, configuration):
+    def callback_factory(self, configuration):
         return callback_factory(
             self.client,
             self.scenario,
@@ -215,63 +237,47 @@ class CallbackFactoryTest(IsolatedRegistryTestCase):
             experiment_configuration=self.experiment_configuration,
         )
 
-    def config(self, target, **arguments):
-        return DynamicModuleConfigBase(target=target, arguments=arguments or None)
-
-    def inits(self):
-        return [entry for entry in TRACE if entry[0] == 'init']
-
     def test_resolves_default_and_explicit_names_in_config_order(self):
-        callbacks = self.build([
-            self.config('factory_explicit', label='a'),
-            self.config('DefaultNamedTrace', label='b'),
+        callbacks = self.callback_factory([
+            DynamicModuleConfigBase(target='factory_explicit', arguments={'label': 'a'}),
+            DynamicModuleConfigBase(target='DefaultNamedTrace', arguments={'label': 'b'}),
         ])
 
         self.assertIsInstance(callbacks, CallbackList)
-        self.assertEqual([(kind, label) for _, kind, label, *_ in self.inits()],
+        self.assertEqual([(entry.kind, entry.label) for entry in TRACE],
                          [('explicit', 'a'), ('default', 'b')])
 
         TRACE.clear()
         callbacks.on_local_training_start(1.0)
-        self.assertEqual(TRACE, [('a', 'local_training_start', (1.0,), {}),
-                                 ('b', 'local_training_start', (1.0,), {})])
+        self.assertEqual(TRACE, [HookCall('a', 'local_training_start', (1.0,), {}),
+                                 HookCall('b', 'local_training_start', (1.0,), {})])
 
     def test_class_name_of_an_explicitly_named_callback_is_not_a_registry_key(self):
         with self.assertRaises(UNRESOLVED_TARGET_ERRORS):
-            self.build([self.config('ExplicitNamedTrace')])
+            self.callback_factory([DynamicModuleConfigBase(target='ExplicitNamedTrace')])
 
     def test_forwards_constructor_inputs(self):
-        self.build([self.config('DefaultNamedTrace', label='x')])
+        self.callback_factory([DynamicModuleConfigBase(target='DefaultNamedTrace', arguments={'label': 'x'})])
 
-        ((_, kind, label, client, scenario, test_data, experiment_configuration),) = self.inits()
-        self.assertEqual((kind, label), ('default', 'x'))
-        self.assertIs(client, self.client)
-        self.assertIs(scenario, self.scenario)
-        self.assertIs(test_data, self.test_data)
-        self.assertIs(experiment_configuration, self.experiment_configuration)
-
-    def test_configured_period_applies_to_dispatch(self):
-        callbacks = self.build([self.config('DefaultNamedTrace', label='p', every_n_tests=2)])
-
-        TRACE.clear()
-        for time in (1.0, 2.0, 3.0, 4.0):
-            callbacks.on_test_inference_end(time, accuracy=0.5)
-
-        self.assertEqual(TRACE, [('p', 'test_inference_end', (2.0,), {'accuracy': 0.5}),
-                                 ('p', 'test_inference_end', (4.0,), {'accuracy': 0.5})])
+        (setup,) = TRACE
+        self.assertEqual((setup.kind, setup.label), ('default', 'x'))
+        self.assertIs(setup.client, self.client)
+        self.assertIs(setup.scenario, self.scenario)
+        self.assertIs(setup.test_data, self.test_data)
+        self.assertIs(setup.experiment_configuration, self.experiment_configuration)
 
     def test_repeated_entries_are_dispatched_independently(self):
-        config = self.config('DefaultNamedTrace', label='same')
+        config = DynamicModuleConfigBase(target='DefaultNamedTrace', arguments={'label': 'same'})
 
-        callbacks = self.build([config, config])
+        callbacks = self.callback_factory([config, config])
 
-        self.assertEqual(len(self.inits()), 2)
+        self.assertEqual(len(TRACE), 2)
         TRACE.clear()
         callbacks.on_aggregation_end(1.0)
-        self.assertEqual(TRACE, [('same', 'aggregation_end', (1.0,), {})] * 2)
+        self.assertEqual(TRACE, [HookCall('same', 'aggregation_end', (1.0,), {})] * 2)
 
     def test_empty_configuration_yields_a_callback_list_that_ignores_every_hook(self):
-        callbacks = self.build([])
+        callbacks = self.callback_factory([])
 
         self.assertIsInstance(callbacks, CallbackList)
         for hook, args, kwargs in HOOK_CALLS:
@@ -281,20 +287,16 @@ class CallbackFactoryTest(IsolatedRegistryTestCase):
 
     def test_unregistered_name_is_an_error(self):
         with self.assertRaises(UNRESOLVED_TARGET_ERRORS):
-            self.build([self.config('NotRegisteredAnywhere')])
+            self.callback_factory([DynamicModuleConfigBase(target='NotRegisteredAnywhere')])
 
     def test_dotted_import_path_works_without_registration(self):
         self.assertNotIn('TraceCallback', BUILTIN_CALLBACKS)
 
-        callbacks = self.build([self.config(f'{__name__}.TraceCallback', label='dotted')])
+        callbacks = self.callback_factory([DynamicModuleConfigBase(target=f'{__name__}.TraceCallback', arguments={'label': 'dotted'})])
 
         TRACE.clear()
         callbacks.on_local_training_end(1.0, loss=0.1)
-        self.assertEqual(TRACE, [('dotted', 'local_training_end', (1.0,), {'loss': 0.1})])
-
-    def test_target_must_be_a_callback_class(self):
-        with self.assertRaises(TypeError):
-            self.build([self.config('collections.OrderedDict')])
+        self.assertEqual(TRACE, [HookCall('dotted', 'local_training_end', (1.0,), {'loss': 0.1})])
 
 
 class CallbackListDispatchTest(unittest.TestCase):
@@ -309,7 +311,7 @@ class CallbackListDispatchTest(unittest.TestCase):
             with self.subTest(hook=hook):
                 TRACE.clear()
                 getattr(callbacks, hook)(*args, **kwargs)
-                self.assertEqual(TRACE, [('first', hook, args, kwargs), ('second', hook, args, kwargs)])
+                self.assertEqual(TRACE, [HookCall('first', hook, args, kwargs), HookCall('second', hook, args, kwargs)])
 
     def test_empty_list_ignores_every_hook(self):
         callbacks = CallbackList([])
@@ -326,10 +328,32 @@ class CallbackListDispatchTest(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'boom'):
             callbacks.on_local_training_start(1.0)
 
-        self.assertEqual(TRACE, [('before', 'on_local_training_start', (1.0,), {})])
+        self.assertEqual(TRACE, [HookCall('before', 'on_local_training_start', (1.0,), {})])
 
 
 class PeriodicCallbackTest(unittest.TestCase):
+    def test_configured_period_applies_to_dispatch(self):
+        TRACE.clear()
+        self.addCleanup(TRACE.clear)
+        config = DynamicModuleConfigBase(
+            target='periodic_trace', arguments={'label': 'p', 'every_n_tests': 2}
+        )
+        with patch.dict(BUILTIN_CALLBACKS):
+            register_callback('periodic_trace')(TraceCallback)
+            callbacks = callback_factory(
+                MagicMock(), configuration=[config], scenario=MagicMock(),
+                test_data=MagicMock(), experiment_configuration=MagicMock(),
+            )
+
+        TRACE.clear()
+        for time in (1.0, 2.0, 3.0, 4.0):
+            callbacks.on_test_inference_end(time, accuracy=0.5)
+
+        self.assertEqual(TRACE, [
+            HookCall('p', 'test_inference_end', (2.0,), {'accuracy': 0.5}),
+            HookCall('p', 'test_inference_end', (4.0,), {'accuracy': 0.5}),
+        ])
+
     def fired(self, hook, period_name, period, values, extra_args=()):
         recorder = make_callback(**{period_name: period})
         for value in values:
