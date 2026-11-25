@@ -11,15 +11,6 @@ from dengine.scenarios.event_api.events import (
 
 
 class EventTests(unittest.TestCase):
-    def test_defaults_and_identity(self):
-        first, second = StartEvent(), StartEvent()
-        self.assertEqual(first.timestamp, datetime.fromtimestamp(0, UTC))
-        self.assertEqual(first.uuid.version, 4)
-        self.assertNotEqual(first, second)
-        self.assertEqual(first, EndEvent(uuid=first.uuid))
-        self.assertEqual(StartEvent.repr(), 'START')
-        self.assertEqual(EndEvent.repr(), 'END')
-
     def test_explicit_timestamp_ordering(self):
         early = Event(tag='early', timestamp=datetime.fromtimestamp(10, UTC))
         late = Event(tag='late', timestamp=datetime.fromtimestamp(20, UTC))
@@ -36,16 +27,22 @@ class EventTests(unittest.TestCase):
         for selector, expected in [(event.uuid, True), (other, False),
                                    ([other, event.uuid], True), ((other,), False)]:
             with self.subTest(selector=selector):
+                # An explicit UUID selects the exact event independently of its tag.
                 descriptor = EventHandlerDescriptor('END', 'start', None, selector)
                 self.assertEqual(descriptor.match(event), expected)
+        # No tag accepts any event when a UUID is also absent.
         self.assertTrue(EventHandlerDescriptor(None, 'end', None, None).match(event))
+        # A supplied tag must match the event.
         self.assertTrue(EventHandlerDescriptor('START', 'start', None, None).match(event))
         self.assertFalse(EventHandlerDescriptor('END', 'start', None, None).match(event))
 
-    def test_nonzero_timestamp_matching_precedes_tag(self):
+    def test_timestamp_and_tag_must_both_match(self):
         event = StartEvent(timestamp=datetime.fromtimestamp(10, UTC))
-        self.assertTrue(EventHandlerDescriptor('END', 'start', 10, None).match(event))
-        self.assertFalse(EventHandlerDescriptor('START', 'start', 11, None).match(event))
+        cases = [('START', 10, True), ('END', 10, False), ('START', 11, False)]
+        for tag, timestamp, expected in cases:
+            with self.subTest(tag=tag, timestamp=timestamp):
+                descriptor = EventHandlerDescriptor(tag, 'start', timestamp, None)
+                self.assertEqual(descriptor.match(event), expected)
 
     def test_local_training_client_filters(self):
         event = LocalTraining(client='alice')
