@@ -46,8 +46,8 @@ class EventHandlerDescriptor:
                 return True
             return False
 
-        if self.timestamp:
-            return event.timestamp.timestamp() == self.timestamp
+        if self.timestamp and event.timestamp.timestamp() != self.timestamp:
+            return False
 
         if self.event_tag and self.event_tag != event.tag:
             return False
