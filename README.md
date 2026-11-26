@@ -1,20 +1,6 @@
 # dEngine 🍋 — A Decentralized Learning Framework
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/DecentralizedLearning/dEngine/blob/main/examples/MNIST/dEngine-MNIST.ipynb)
 
-> [!WARNING]
-> **This repository is currently under construction 🚧**
-> The framework is actively evolving, and more updates and documentation are coming soon.
->
-> The current Markdown documentation has been generated with the help of LLMs and subsequently reviewed by hand. As a result, it may be incomplete or not yet reflect all of the framework's features.
->
-> For now, the best ways to learn how to use dEngine are to:
->
-> * explore the other repositories in the organization, or
-> * get in touch with **Samuele Sabella** at **[samuele.sabella@iit.cnr.it](mailto:samuele.sabella@iit.cnr.it)**.
->
-> Thanks for your patience while the framework and its documentation continue to take shape!
-
-
 **dEngine** is a Python simulation framework for research on **decentralized, federated, and gossip-style machine learning**. It lets you define a population of clients, a communication topology, a data partitioning strategy, and a training/aggregation scenario in a single YAML file, then run the whole simulation on one machine (CPU or GPU) with PyTorch.
 
 It's built for researchers who want to iterate quickly on collaborative-learning algorithms (federated averaging, decentralized gossip averaging, and beyond) without re-implementing the simulation plumbing (network graphs, dataset partitioning, checkpointing, metrics) for every project.

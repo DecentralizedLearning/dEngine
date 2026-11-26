@@ -19,7 +19,7 @@ jobs:
           python3 -m pip install virtualenv autopep8 packaging
           virtualenv /tmp/ci_venv
           /tmp/ci_venv/bin/pip install ".[full]" --extra-index-url https://download.pytorch.org/whl/cpu
-          /tmp/ci_venv/bin/pip install flake8 pylint
+          /tmp/ci_venv/bin/pip install flake8 pylint pytest
 
       - name: Run flake8
         run: |
@@ -35,4 +35,6 @@ jobs:
             -not -path "*/.ipynb_checkpoints/*" \
             -not -path "*/tests/*" -not -path "*/examples/*" \
             -print0 | xargs -0 /tmp/ci_venv/bin/pylint --rcfile=.pylintrc -E
-
+      - name: Run pytest
+        run: |
+          /tmp/ci_venv/bin/python -m pytest tests/
